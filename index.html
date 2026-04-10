@@ -24,13 +24,31 @@
   .filters label { font-size: 12px; color: #666; }
   .filters { flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
   .filter-group { display: flex; flex-direction: column; gap: 4px; }
-  .filter-group label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
-  .filter-group select {
-    font-size: 12px; border: 1px solid #ddd; border-radius: 6px; background: #fff;
-    padding: 4px 24px 4px 8px; color: #333; cursor: pointer; outline: none;
-    min-width: 130px; appearance: auto;
+  .filter-group > span { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
+  /* dropdown multi-select */
+  .ms-wrap { position: relative; display: inline-block; }
+  .ms-btn {
+    font-size: 12px; padding: 5px 28px 5px 10px; border: 1px solid #ddd; border-radius: 6px;
+    background: #fff; cursor: pointer; white-space: nowrap; min-width: 130px;
+    text-align: left; color: #333; position: relative; outline: none;
   }
-  .filter-group select:focus { border-color: #1a1a2e; box-shadow: 0 0 0 2px rgba(26,26,46,.1); }
+  .ms-btn::after { content: '▾'; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #888; pointer-events: none; }
+  .ms-wrap.open .ms-btn { border-color: #1a1a2e; box-shadow: 0 0 0 2px rgba(26,26,46,.12); }
+  .ms-panel {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 999;
+    background: #fff; border: 1px solid #ddd; border-radius: 8px;
+    padding: 4px 0; min-width: 180px; max-height: 240px; overflow-y: auto;
+    box-shadow: 0 6px 18px rgba(0,0,0,.13);
+  }
+  .ms-wrap.open .ms-panel { display: block; }
+  .ms-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; font-size: 12px; cursor: pointer; color: #333; user-select: none;
+  }
+  .ms-item:hover { background: #f4f4f4; }
+  .ms-item input[type=checkbox] { accent-color: #1a1a2e; width: 13px; height: 13px; flex-shrink: 0; cursor: pointer; }
+  .ms-item.checked { background: #f0f4ff; font-weight: 600; }
+  .ms-divider { border: none; border-top: 1px solid #eee; margin: 3px 0; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th { background: #1a1a2e; color: #FFE600; padding: 8px 10px; text-align: center; font-weight: 600; }
   td { padding: 6px 10px; text-align: center; border-bottom: 1px solid #f0f0f0; }
@@ -107,70 +125,39 @@
 
 <div class="filters" style="margin-top:16px">
   <div class="filter-group">
-    <label>Safra</label>
-    <select id="selSafra" onchange="updateCharts()">
-      <option value="">Todas</option>
-      <option value="202507">jul/25</option>
-      <option value="202508">ago/25</option>
-      <option value="202509">set/25</option>
-      <option value="202510">out/25</option>
-      <option value="202511">nov/25</option>
-      <option value="202512">dez/25</option>
-      <option value="202601">jan/26</option>
-      <option value="202602">fev/26</option>
-      <option value="202603">mar/26</option>
-      <option value="202604">abr/26</option>
-    </select>
+    <span>Safra</span>
+    <div class="ms-wrap" id="wSafra">
+      <button class="ms-btn" id="bSafra" type="button" onclick="toggleMs('wSafra')">Todas</button>
+      <div class="ms-panel" id="pSafra"></div>
+    </div>
   </div>
   <div class="filter-group">
-    <label>Faixa</label>
-    <select id="selFaixa" onchange="updateCharts()">
-      <option value="">Todas</option>
-      <option value="01. ATE 100">≤ R$100 (inicial)</option>
-      <option value="02. ATE 200">≤ R$200 (grad. 1)</option>
-      <option value="03. ATE 300">≤ R$300 (grad. 2)</option>
-      <option value="04. ATE 500">≤ R$500 (Full TC)</option>
-      <option value="05. 501 A 700">R$501–700</option>
-      <option value="06. 701 A 900">R$701–900</option>
-      <option value="07. 901 A 1000">R$901–1000</option>
-      <option value="08. 1001 A 1300">R$1001–1300</option>
-      <option value="09. 1301 A 1500">R$1301–1500</option>
-      <option value="10. 1501 A 2000">R$1501–2000</option>
-      <option value="11. 2001 A 3000">R$2001–3000</option>
-      <option value="12. ACIMA DE 3000">Acima R$3000</option>
-    </select>
+    <span>Faixa</span>
+    <div class="ms-wrap" id="wFaixa">
+      <button class="ms-btn" id="bFaixa" type="button" onclick="toggleMs('wFaixa')">Todas</button>
+      <div class="ms-panel" id="pFaixa"></div>
+    </div>
   </div>
   <div class="filter-group">
-    <label>Carteira</label>
-    <select id="selFlg" onchange="updateCharts()">
-      <option value="">Todos</option>
-      <option value="1">Carteira Líquida</option>
-      <option value="0">Demais</option>
-    </select>
+    <span>Carteira</span>
+    <div class="ms-wrap" id="wFlg">
+      <button class="ms-btn" id="bFlg" type="button" onclick="toggleMs('wFlg')">Todos</button>
+      <div class="ms-panel" id="pFlg"></div>
+    </div>
   </div>
   <div class="filter-group">
-    <label>MOB</label>
-    <select id="selMob" onchange="updateCharts()">
-      <option value="">Todos</option>
-      <option value="0">MOB 0</option>
-      <option value="1">MOB 1</option>
-      <option value="2">MOB 2</option>
-      <option value="3">MOB 3</option>
-      <option value="4">MOB 4</option>
-      <option value="5">MOB 5</option>
-      <option value="6">MOB 6</option>
-      <option value="7">MOB 7</option>
-      <option value="8">MOB 8</option>
-    </select>
+    <span>MOB</span>
+    <div class="ms-wrap" id="wMob">
+      <button class="ms-btn" id="bMob" type="button" onclick="toggleMs('wMob')">Todos</button>
+      <div class="ms-panel" id="pMob"></div>
+    </div>
   </div>
   <div class="filter-group">
-    <label>Mín. usuários</label>
-    <select id="selMinVol" onchange="updateCharts()">
-      <option value="0" selected>Sem filtro</option>
-      <option value="50">&gt; 50</option>
-      <option value="100">&gt; 100</option>
-      <option value="200">&gt; 200</option>
-    </select>
+    <span>Mín. usuários</span>
+    <div class="ms-wrap" id="wMinVol">
+      <button class="ms-btn" id="bMinVol" type="button" onclick="toggleMs('wMinVol')">Sem filtro</button>
+      <div class="ms-panel" id="pMinVol"></div>
+    </div>
   </div>
 </div>
 
@@ -1622,19 +1609,80 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0){
   document.getElementById('tblResume').className = 'rtbl';
 }
 
+// ── Multi-select helpers ──────────────────────────────────────────────────────
+(function initMsFilters(){
+  const SAFRA_OPTS = [
+    ['202507','jul/25'],['202508','ago/25'],['202509','set/25'],['202510','out/25'],
+    ['202511','nov/25'],['202512','dez/25'],['202601','jan/26'],['202602','fev/26'],
+    ['202603','mar/26'],['202604','abr/26']
+  ];
+  const FAIXA_OPTS = [
+    ['01. ATE 100','≤ R$100 (inicial)'],['02. ATE 200','≤ R$200 (grad. 1)'],
+    ['03. ATE 300','≤ R$300 (grad. 2)'],['04. ATE 500','≤ R$500 (Full TC)'],
+    ['05. 501 A 700','R$501–700'],['06. 701 A 900','R$701–900'],
+    ['07. 901 A 1000','R$901–1000'],['08. 1001 A 1300','R$1001–1300'],
+    ['09. 1301 A 1500','R$1301–1500'],['10. 1501 A 2000','R$1501–2000'],
+    ['11. 2001 A 3000','R$2001–3000'],['12. ACIMA DE 3000','Acima R$3000']
+  ];
+  const FLG_OPTS  = [['1','Carteira Líquida'],['0','Demais']];
+  const MOB_OPTS  = [0,1,2,3,4,5,6,7,8].map(m => [String(m), `MOB ${m}`]);
+
+  function fill(panelId, opts) {
+    document.getElementById(panelId).innerHTML = opts.map(([v,lbl]) =>
+      `<label class="ms-item"><input type="checkbox" value="${v}" onchange="msCh('${panelId}')"> ${lbl}</label>`
+    ).join('');
+  }
+  fill('pSafra', SAFRA_OPTS);
+  fill('pFaixa', FAIXA_OPTS);
+  fill('pFlg',   FLG_OPTS);
+  fill('pMob',   MOB_OPTS);
+
+  const MINVOL_OPTS = [['0','Sem filtro'],['50','> 50'],['100','> 100'],['200','> 200']];
+  document.getElementById('pMinVol').innerHTML = MINVOL_OPTS.map(([v,lbl],i) =>
+    `<label class="ms-item"><input type="radio" name="minvol" value="${v}" onchange="minVolCh()" ${i===0?'checked':''}> ${lbl}</label>`
+  ).join('');
+})();
+
+function toggleMs(wrapId) {
+  const el = document.getElementById(wrapId);
+  const wasOpen = el.classList.contains('open');
+  document.querySelectorAll('.ms-wrap.open').forEach(w => w.classList.remove('open'));
+  if (!wasOpen) el.classList.add('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ms-wrap')) document.querySelectorAll('.ms-wrap.open').forEach(w => w.classList.remove('open'));
+});
+
+function msCh(panelId) {
+  const inputs  = [...document.querySelectorAll(`#${panelId} input`)];
+  const checked = inputs.filter(i => i.checked);
+  const btn = document.getElementById('b' + panelId.slice(1));
+  if (btn) btn.textContent = (!checked.length || checked.length === inputs.length) ? 'Todos' : `${checked.length} sel.`;
+  // highlight checked items
+  inputs.forEach(i => i.closest('.ms-item').classList.toggle('checked', i.checked));
+  updateCharts();
+}
+function getMsSel(panelId) {
+  return [...document.querySelectorAll(`#${panelId} input:checked`)].map(i => i.value);
+}
+function minVolCh() {
+  const sel = document.querySelector('#pMinVol input:checked');
+  const btn = document.getElementById('bMinVol');
+  if (btn && sel) btn.textContent = sel.value==='0' ? 'Sem filtro' : '> '+sel.value;
+  updateCharts();
+}
+function getMinVol() {
+  const sel = document.querySelector('#pMinVol input:checked');
+  return sel ? parseInt(sel.value) : 0;
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getSel(id) {
-  const v = document.getElementById(id).value;
-  return v === '' ? [] : [v];
-}
-
 function updateCharts(){
-  const sf   = getSel('selSafra');
-  const fx   = getSel('selFaixa');
-  const mob  = getSel('selMob').map(Number);
-  const flg  = getSel('selFlg');
-  const minV = parseInt(document.getElementById('selMinVol').value) || 0;
+  const sf   = getMsSel('pSafra');
+  const fx   = getMsSel('pFaixa');
+  const mob  = getMsSel('pMob').map(Number);
+  const flg  = getMsSel('pFlg');
+  const minV = getMinVol();
   buildChartLimMob(sf, fx, mob, flg, minV);
   buildChartFaixaMob(sf, mob, flg, minV);
   buildChartAcima500(sf, fx, mob, flg, minV);
