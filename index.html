@@ -1216,7 +1216,11 @@ const RAW = [
 ];
 
 const SAFRA_LABELS = {"202507":"jul/25","202508":"ago/25","202509":"set/25","202510":"out/25","202511":"nov/25","202512":"dez/25","202601":"jan/26","202602":"fev/26","202603":"mar/26","202604":"abr/26"};
-const SAFRA_COLORS = {"202507":"#1a1a2e","202508":"#f4a261","202509":"#2a9d8f","202510":"#457b9d","202511":"#e76f51","202512":"#40916c","202601":"#6a0572","202602":"#c77dff","202603":"#0077b6","202604":"#00b4d8"};
+const SAFRA_COLORS = {
+  "202507":"#aaaaaa", "202508":"#888888", "202509":"#606060",  // antigas → cinza
+  "202510":"#74c0fc", "202511":"#339af0", "202512":"#1864ab",  // médias  → azul
+  "202601":"#ffe066", "202602":"#ffd43b", "202603":"#fab005", "202604":"#e67700"  // atuais → amarelo
+};
 // Cores alinhadas à jornada de graduação Micro TC
 const FAIXA_COLORS = {
   "01. ATE 100":"#e0e0e0",      // limite inicial — cinza
