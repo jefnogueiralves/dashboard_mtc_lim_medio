@@ -1573,8 +1573,8 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0){
   mobs.forEach(m => html += `<th>MOB ${m}</th>`);
   html += '</tr>';
 
-  safras.forEach((sf, si) => {
-    const color = Object.values(SAFRA_COLORS)[si] || '#1a1a2e';
+  safras.forEach((sf) => {
+    const color = SAFRA_COLORS[sf] || '#1a1a2e';
     // Calc limit average per MOB (all faixas or filtered)
     const limByMob = mobs.map(mob => {
       const rows = RAW.filter(r => r[0]===sf && r[2]===mob
