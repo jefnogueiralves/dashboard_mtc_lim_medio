@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard — Limite Médio Micro TC</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+  header { background: #1a1a2e; color: #FFE600; padding: 18px 32px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header span { font-size: 13px; color: #aaa; margin-left: auto; }
+  .kpi-row { display: flex; gap: 16px; padding: 20px 32px 0; }
+  .kpi { background: #fff; border-radius: 10px; padding: 16px 22px; flex: 1; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .kpi .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi .value { font-size: 28px; font-weight: 700; color: #1a1a2e; margin-top: 4px; }
+  .kpi .sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 32px; }
+  .grid.full { grid-template-columns: 1fr; }
+  .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .card h2 { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 16px; text-transform: uppercase; letter-spacing: .4px; }
+  .filters { display: flex; gap: 12px; padding: 0 32px 4px; flex-wrap: wrap; align-items: center; }
+  .filters label { font-size: 12px; color: #666; }
+  .filters select { font-size: 12px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #1a1a2e; color: #FFE600; padding: 8px 10px; text-align: center; font-weight: 600; }
+  td { padding: 6px 10px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+  tr:hover td { background: #fafafa; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge-yellow { background: #FFE600; color: #1a1a2e; }
+  canvas { max-height: 300px; }
+  /* Resume table */
+  .rtbl { width:100%; border-collapse:collapse; font-size:12px; }
+  .rtbl th { background:#1a1a2e; color:#FFE600; padding:7px 12px; text-align:center; font-weight:600; white-space:nowrap; }
+  .rtbl th.safra-col { text-align:left; }
+  .rtbl td { padding:8px 12px; text-align:center; border-bottom:1px solid #f0f0f0; white-space:nowrap; }
+  .rtbl tr:hover td { background:#fafafa; }
+  .rtbl .val { font-weight:700; font-size:13px; color:#1a1a2e; }
+  .rtbl .pct { font-size:11px; color:#27ae60; font-weight:600; }
+  .rtbl .pct.neg { color:#e74c3c; }
+  .rtbl td.mob0 { background:#f8f8f8; }
+  .rtbl .safra-name { font-weight:700; text-align:left; background:#f8f8f8; color:#1a1a2e; border-left:4px solid; padding-left:10px; }
+  /* Tabs */
+  .tabs { display: flex; gap: 0; padding: 20px 32px 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 0; }
+  .tab-btn { padding: 10px 28px; font-size: 13px; font-weight: 600; border: none; background: none; cursor: pointer; color: #888; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; letter-spacing: .3px; }
+  .tab-btn.active { color: #1a1a2e; border-bottom: 3px solid #FFE600; }
+  .tab-btn:hover { color: #1a1a2e; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  /* Insights */
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 32px 0; }
+  .insight-card { background: #fff; border-radius: 10px; padding: 22px 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .insight-card.full { grid-column: 1 / -1; }
+  .insight-card .ic-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .insight-card .ic-icon { font-size: 22px; }
+  .insight-card .ic-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #1a1a2e; }
+  .insight-card .ic-badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .badge-green { background: #d4f5e2; color: #1a7a4a; }
+  .badge-orange { background: #fff0d6; color: #b06000; }
+  .badge-red { background: #fde8e8; color: #c0392b; }
+  .badge-blue { background: #e3f0ff; color: #1a4fa0; }
+  .insight-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .insight-list li { font-size: 13px; line-height: 1.55; padding-left: 18px; position: relative; color: #333; }
+  .insight-list li::before { content: '•'; position: absolute; left: 0; color: #FFE600; font-size: 18px; line-height: 1.1; }
+  .insight-list li strong { color: #1a1a2e; }
+  .action-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; padding: 16px 32px 32px; }
+  .action-card { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); border-top: 4px solid #ccc; }
+  .action-card.priority-1 { border-top-color: #e74c3c; }
+  .action-card.priority-2 { border-top-color: #f39c12; }
+  .action-card.priority-3 { border-top-color: #27ae60; }
+  .action-card .ac-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #888; margin-bottom: 8px; }
+  .action-card .ac-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+  .action-card .ac-desc { font-size: 12px; color: #555; line-height: 1.5; }
+  .action-card .ac-meta { margin-top: 12px; font-size: 11px; color: #aaa; }
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #888; padding: 20px 32px 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div style="font-size:11px;color:#FFE600;letter-spacing:1px;text-transform:uppercase">Mercado Pago · Micro TC · MLB</div>
+    <h1>Dashboard — Limite Médio por Safra de Emissão</h1>
+  </div>
+  <span>Safras: jul/25 → nov/25 · Atualizado abr/26</span>
+</header>
+
+<div class="kpi-row" id="kpiRow"></div>
+
+<!-- Tabs navigation -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('dashboard')">Análise</button>
+  <button class="tab-btn" onclick="switchTab('insights')">Insights & Acionáveis</button>
+</div>
+
+<!-- TAB: Dashboard -->
+<div id="tab-dashboard" class="tab-content active">
+
+<div class="filters" style="margin-top:16px">
+  <label>Safra:</label>
+  <select id="selSafra" onchange="updateCharts()">
+    <option value="all">Todas</option>
+    <option value="202507">jul/25</option>
+    <option value="202508">ago/25</option>
+    <option value="202509">set/25</option>
+    <option value="202510">out/25</option>
+    <option value="202511">nov/25</option>
+    <option value="202601">jan/26</option>
+    <option value="202602">fev/26</option>
+    <option value="202603">mar/26</option>
+    <option value="202604">abr/26</option>
+  </select>
+  <label style="margin-left:12px">Faixa:</label>
+  <select id="selFaixa" onchange="updateCharts()">
+    <option value="all">Todas</option>
+    <option value="01. ATE 100">01. ATE 100 (inicial)</option>
+    <option value="02. ATE 200">02. ATE 200 (grad. 1)</option>
+    <option value="03. ATE 300">03. ATE 300 (grad. 2)</option>
+    <option value="04. ATE 500">04. ATE 500 (Full TC)</option>
+    <option value="05. 501 A 700">05. 501 A 700</option>
+    <option value="06. 701 A 900">06. 701 A 900</option>
+    <option value="07. 901 A 1000">07. 901 A 1000</option>
+    <option value="08. 1001 A 1300">08. 1001 A 1300</option>
+    <option value="09. 1301 A 1500">09. 1301 A 1500</option>
+    <option value="10. 1501 A 2000">10. 1501 A 2000</option>
+    <option value="11. 2001 A 3000">11. 2001 A 3000</option>
+    <option value="12. ACIMA DE 3000">12. ACIMA DE 3000</option>
+  </select>
+  <label style="margin-left:12px">Carteira:</label>
+  <select id="selFlg" onchange="updateCharts()">
+    <option value="all">Todos</option>
+    <option value="1">Carteira Líquida (ativo + uso + não cancelado)</option>
+    <option value="0">Demais</option>
+  </select>
+  <label style="margin-left:12px">MOB:</label>
+  <select id="selMob" onchange="updateCharts()">
+    <option value="all">Todos</option>
+    <option value="0">MOB 0</option>
+    <option value="1">MOB 1</option>
+    <option value="2">MOB 2</option>
+    <option value="3">MOB 3</option>
+    <option value="4">MOB 4</option>
+    <option value="5">MOB 5</option>
+    <option value="6">MOB 6</option>
+    <option value="7">MOB 7</option>
+    <option value="8">MOB 8</option>
+  </select>
+  <label style="margin-left:12px">Mín. usuários:</label>
+  <select id="selMinVol" onchange="updateCharts()">
+    <option value="0">Sem filtro</option>
+    <option value="50">&gt; 50</option>
+    <option value="100">&gt; 100</option>
+    <option value="200">&gt; 200</option>
+  </select>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Limite Médio por MOB — por Safra</h2>
+    <canvas id="chartLimMob"></canvas>
+  </div>
+  <div class="card">
+    <h2>Distribuição de Faixas por MOB (% usuários)</h2>
+    <canvas id="chartFaixaMob"></canvas>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Volume Emitido por Safra</h2>
+    <canvas id="chartEmissao"></canvas>
+  </div>
+  <div class="card">
+    <h2>Limite Médio — Acima de R$500 por Safra x MOB</h2>
+    <canvas id="chartAcima500"></canvas>
+  </div>
+</div>
+
+<div class="grid full">
+  <div class="card">
+    <h2>Limite Médio por Safra × MOB — Visão Resumida</h2>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">
+      3 linhas por safra: <strong style="color:#1a1a2e">Total Geral</strong> · <span style="color:#1e6fbf">≤ R$500 (Micro TC)</span> · <span style="color:#c07808">Acima de R$500</span> · volume de usuários e % crescimento vs MOB 0
+    </div>
+    <div style="overflow-x:auto"><table id="tblFx2"></table></div>
+  </div>
+</div>
+
+<div class="grid full">
+  <div class="card">
+    <h2>Limite Médio por Safra × MOB</h2>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">
+      Cada célula: <strong style="color:#1a1a2e">Limite Médio (R$)</strong> · <span style="color:#27ae60">% crescimento vs MOB 0 da safra</span>
+    </div>
+    <div style="overflow-x:auto"><table id="tblResume"></table></div>
+  </div>
+</div>
+
+<div class="grid full" style="padding-bottom:32px">
+  <div class="card">
+    <h2>Tabela — Limite Médio por Safra, MOB e Faixa</h2>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">
+      Cada célula: <strong style="color:#1a1a2e">Limite Médio</strong> · <span style="color:#888">Volume de usuários</span> · <span style="color:#aaa">Share % sobre ativos naquele MOB</span>
+    </div>
+    <div style="overflow-x:auto"><table id="tbl"></table></div>
+  </div>
+</div>
+
+</div><!-- /tab-dashboard -->
+
+<!-- TAB: Insights & Acionáveis -->
+<div id="tab-insights" class="tab-content">
+
+  <!-- Jornada visual de graduação -->
+  <div class="section-title">Como funciona a Graduação de Limite — Micro TC</div>
+  <div style="padding: 0 32px 4px">
+    <div style="background:#fff;border-radius:10px;padding:20px 28px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+      <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap">
+        <div style="text-align:center;min-width:110px">
+          <div style="background:#1a1a2e;color:#FFE600;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px">R$ 100</div>
+          <div style="font-size:11px;color:#888;margin-top:6px">Emissão<br>MOB 0</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:80px">
+          <div style="font-size:10px;color:#27ae60;font-weight:700;white-space:nowrap">Usa ~50% + paga em dia</div>
+          <div style="height:2px;width:100%;background:linear-gradient(90deg,#1a1a2e,#27ae60);margin:4px 0"></div>
+        </div>
+        <div style="text-align:center;min-width:110px">
+          <div style="background:#27ae60;color:#fff;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px">R$ 200</div>
+          <div style="font-size:11px;color:#888;margin-top:6px">Graduação 1<br>MOB 1</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:80px">
+          <div style="font-size:10px;color:#27ae60;font-weight:700;white-space:nowrap">Bom comportamento</div>
+          <div style="height:2px;width:100%;background:linear-gradient(90deg,#27ae60,#2980b9);margin:4px 0"></div>
+        </div>
+        <div style="text-align:center;min-width:110px">
+          <div style="background:#2980b9;color:#fff;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px">R$ 300</div>
+          <div style="font-size:11px;color:#888;margin-top:6px">Graduação 2<br>MOB 2</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:80px">
+          <div style="font-size:10px;color:#27ae60;font-weight:700;white-space:nowrap">+2 meses sem regras duras</div>
+          <div style="height:2px;width:100%;background:linear-gradient(90deg,#2980b9,#8e44ad);margin:4px 0"></div>
+        </div>
+        <div style="text-align:center;min-width:130px">
+          <div style="background:#8e44ad;color:#fff;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px">R$ 500 🎓</div>
+          <div style="font-size:11px;color:#888;margin-top:6px">Vira Full TC<br>MOB 4–5</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:80px">
+          <div style="font-size:10px;color:#e67e22;font-weight:700;white-space:nowrap">Upsell automático / cupom</div>
+          <div style="height:2px;width:100%;background:linear-gradient(90deg,#8e44ad,#e67e22);margin:4px 0"></div>
+        </div>
+        <div style="text-align:center;min-width:110px">
+          <div style="background:#e67e22;color:#fff;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px">R$ 700+</div>
+          <div style="font-size:11px;color:#888;margin-top:6px">Pós-Full<br>MOB 6+</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding:12px 16px;background:#fffbe6;border-left:4px solid #FFE600;border-radius:6px;font-size:12px;color:#555">
+        <strong style="color:#1a1a2e">⚡ Graduação Acelerada (RTG Character = A):</strong>
+        usuário emitido com R$100, RTG identifica perfil excelente logo no primeiro ciclo →
+        <strong>pula direto para R$500</strong>, virando Full TC sem passar pelos degraus intermediários.
+        Esses usuários aparecem nas faixas &gt;R$500 já no MOB 1–2 com volumes ainda pequenos.
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:12px">Diagnóstico da Carteira</div>
+  <div class="insight-grid">
+
+    <div class="insight-card">
+      <div class="ic-header">
+        <span class="ic-icon">📈</span>
+        <span class="ic-title">Ritmo de Graduação Standard</span>
+        <span class="ic-badge badge-green">Saudável</span>
+      </div>
+      <ul class="insight-list">
+        <li>O limite médio sai de ~R$100 no MOB 0 e alcança <strong>R$300–R$480 no MOB 8</strong>, consistente com o degrau de graduação a cada ciclo mensal de bom pagamento.</li>
+        <li>O salto mais relevante ocorre no <strong>MOB 4–5</strong>, quando usuários que seguiram a trilha padrão (R$100→R$200→R$300→R$500) completam a jornada e viram Full TC.</li>
+        <li>A safra <strong>jul/25 lidera em MOB 8</strong> (~R$480), reflexo de mais meses com oportunidade de upsell pós-virada de Full.</li>
+      </ul>
+    </div>
+
+    <div class="insight-card">
+      <div class="ic-header">
+        <span class="ic-icon">⚡</span>
+        <span class="ic-title">Graduação Acelerada nos MOBs 1–3</span>
+        <span class="ic-badge badge-blue">Oportunidade</span>
+      </div>
+      <ul class="insight-list">
+        <li>Usuários em faixas &gt;R$500 nos MOBs 1–3 representam a <strong>graduação acelerada via RTG Character A</strong> — perfil excelente detectado no primeiro ciclo, pula direto para Full TC.</li>
+        <li>Volume ainda pequeno (&lt;100 usuários), mas chegam às <strong>réguas de upsell e cupons 3 meses antes</strong> da trilha padrão.</li>
+        <li>Monitorar o % de acelerados por safra é um <strong>indicador antecedente de qualidade do portfólio</strong> — mais acelerados = safra com melhor perfil de risco.</li>
+      </ul>
+    </div>
+
+    <div class="insight-card">
+      <div class="ic-header">
+        <span class="ic-icon">🏦</span>
+        <span class="ic-title">Concentração no Piso R$500</span>
+        <span class="ic-badge badge-orange">Atenção</span>
+      </div>
+      <ul class="insight-list">
+        <li>Mais de <strong>85% dos usuários ativos</strong> permanecem na faixa "ATE 500" até o MOB 3 — são os da trilha standard, ainda completando os 4 ciclos de bom pagamento.</li>
+        <li>Usuários que chegam ao <strong>MOB 5+ ainda no piso de R$500</strong> provavelmente tiveram algum ciclo com problema de pagamento ou baixa utilização — candidatos a régua de reengajamento.</li>
+        <li>A partir do MOB 4–5 a faixa 501–900 começa a crescer, marcando a <strong>virada em massa para Full TC</strong> da safra correspondente.</li>
+      </ul>
+    </div>
+
+    <div class="insight-card">
+      <div class="ic-header">
+        <span class="ic-icon">🚀</span>
+        <span class="ic-title">Pós-Full: Upsell e Segunda Graduação</span>
+        <span class="ic-badge badge-green">Em curso</span>
+      </div>
+      <ul class="insight-list">
+        <li>Após virar Full TC (R$500), usuários entram nas <strong>réguas automáticas de upsell e cupons de desconto</strong> — visíveis nas faixas 501–900 a partir do MOB 6.</li>
+        <li>Na safra jul/25 (MOB 8), usuários nas faixas 1001–1300 já somam volume relevante — evidência de que a <strong>segunda graduação está ocorrendo</strong> para os perfis mais ativos.</li>
+        <li>O limite médio dos &gt;R$500 converge para <strong>R$650–R$900 no MOB 7–8</strong> — a primeira graduação pós-full é conservadora, com espaço para acelerar via campanhas.</li>
+      </ul>
+    </div>
+
+    <div class="insight-card">
+      <div class="ic-header">
+        <span class="ic-icon">📦</span>
+        <span class="ic-title">Volume Emitido por Safra</span>
+        <span class="ic-badge badge-blue">Contexto</span>
+      </div>
+      <ul class="insight-list">
+        <li>A emissão caiu de <strong>139k (jul/25)</strong> para ~121k (set/25), com recuperação expressiva para <strong>171k (out/25)</strong> e 167k (nov/25).</li>
+        <li>O pico de out–nov/25 indica expansão na aquisição — maior onda de virada para Full TC da história chegarão ao <strong>MOB 4 em fev–mar/26</strong>.</li>
+        <li>Monitorar a evolução individual por safra é essencial — safras maiores diluem o limite médio agregado nos primeiros MOBs.</li>
+      </ul>
+    </div>
+
+    <div class="insight-card full">
+      <div class="ic-header">
+        <span class="ic-icon">⚠️</span>
+        <span class="ic-title">Riscos e Leituras Corretas dos Dados</span>
+        <span class="ic-badge badge-red">Atenção</span>
+      </div>
+      <ul class="insight-list" style="display:grid;grid-template-columns:1fr 1fr;gap:10px 32px">
+        <li>A <strong>queda do limite médio geral no MOB 4–5</strong> é composicional: entrada em massa na faixa &gt;R$500 dilui a média total — não reflete deterioração, e sim a chegada em massa ao piso Full.</li>
+        <li>Faixas &gt;R$1.500 nos MOBs 1–3 com <strong>volume &lt;30 usuários</strong> são provavelmente product_id=5 não-standard ou ajustes manuais — não representam o motor de graduação padrão.</li>
+        <li>Safras <strong>out/25 e nov/25</strong> chegarão ao MOB 4 em fev–mar/26 — maior onda de virada para Full TC que a carteira já viu. Monitoramento crítico a partir de fev/26.</li>
+        <li>Filtro de carteira líquida exclui cancelados — limite médio nos MOBs 7+ tem <strong>viés de sobrevivência</strong>: só ficaram os bons pagadores, os números são mais otimistas que a realidade total.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="section-title" style="margin-top:8px">Acionáveis Recomendados</div>
+  <div class="action-grid">
+
+    <div class="action-card priority-1">
+      <div class="ac-label">Prioridade Alta · CRM</div>
+      <div class="ac-title">Régua de incentivo ao uso no MOB 2–3</div>
+      <div class="ac-desc">Usuários que usaram o cartão nos MOBs 1–2 e pagaram em dia estão a 1–2 ciclos de virar Full TC. Comunicação no MOB 2–3 ("você está quase lá — use mais R$X esse mês para desbloquear seu cartão full") acelera o último degrau R$300→R$500.</div>
+      <div class="ac-meta">Impacto: Alto · Esforço: Baixo · Gatilho: MOB 2 + utilização &gt;40%</div>
+    </div>
+
+    <div class="action-card priority-1">
+      <div class="ac-label">Prioridade Alta · Produto</div>
+      <div class="ac-title">Expandir RTG Character A para mais usuários</div>
+      <div class="ac-desc">A graduação acelerada (RTG A → R$500 direto) ainda representa volume pequeno nos MOBs 1–2. Revisar thresholds do RTG Character para ampliar o pool elegível — cada usuário acelerado gera upsell ~3 meses antes do ciclo padrão.</div>
+      <div class="ac-meta">Impacto: Alto · Esforço: Médio · Owner: Risk + Produto</div>
+    </div>
+
+    <div class="action-card priority-1">
+      <div class="ac-label">Prioridade Alta · Analytics</div>
+      <div class="ac-title">Alerta para safras out/nov-25 no MOB 4</div>
+      <div class="ac-desc">Com 171k e 167k emitidos, essas safras representam a maior onda de virada Full TC já vista. Criar acompanhamento semanal do % graduado no MOB 4 vs jul–ago/25 no mesmo MOB — desvio &gt;3pp deve gerar alerta automático.</div>
+      <div class="ac-meta">Impacto: Alto · Esforço: Baixo · Data crítica: fev/26</div>
+    </div>
+
+    <div class="action-card priority-2">
+      <div class="ac-label">Prioridade Média · CRM</div>
+      <div class="ac-title">Reengajar travados no piso no MOB 5+</div>
+      <div class="ac-desc">Usuários que chegaram ao MOB 5 ainda em "ATE 500" tiveram baixa utilização ou atraso em algum ciclo. Campanha de reativação com incentivo de uso (cashback, desconto) pode retomar a trilha de graduação e destravar a virada para Full TC.</div>
+      <div class="ac-meta">Impacto: Médio · Esforço: Baixo · Segmento: MOB≥5 + limite R$100–300</div>
+    </div>
+
+    <div class="action-card priority-2">
+      <div class="ac-label">Prioridade Média · Produto</div>
+      <div class="ac-title">Acelerar segunda graduação pós-Full</div>
+      <div class="ac-desc">Usuários Full TC em R$500–R$700 no MOB 6–7 com bom comportamento são candidatos à segunda graduação (R$900–R$1.300). Hoje o upsell automático é conservador — avaliar reduzir o período mínimo pós-virada para ativar a segunda régua mais cedo.</div>
+      <div class="ac-meta">Impacto: Médio · Esforço: Médio · Referência: jul/25 MOB 7–8</div>
+    </div>
+
+    <div class="action-card priority-3">
+      <div class="ac-label">Prioridade Normal · Analytics</div>
+      <div class="ac-title">Medir % de acelerados (RTG A) por safra</div>
+      <div class="ac-desc">Criar KPI "% de usuários que viraram Full no MOB ≤2 via RTG Character A" por safra. Serve como proxy de qualidade da aquisição — safras com mais acelerados tendem a ter melhor comportamento longo prazo e menor inadimplência.</div>
+      <div class="ac-meta">Impacto: Médio · Esforço: Baixo · Owner: Analytics</div>
+    </div>
+
+  </div>
+</div><!-- /tab-insights -->
+
+<script>
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+const RAW = [
+  ["202507",139630,0,"01. ATE 100","01. ATE 500",0,139630,120],
+  ["202507",139630,1,"01. ATE 100","01. ATE 500",0,36281,100],
+  ["202507",139630,1,"02. ATE 200","01. ATE 500",0,6875,200],
+  ["202507",139630,1,"03. ATE 300","01. ATE 500",0,5021,300],
+  ["202507",139630,1,"04. ATE 500","01. ATE 500",0,366,500],
+  ["202507",139630,1,"06. 701 A 900","02. ACIMA DE 500",0,2,850],
+  ["202507",139630,1,"10. 1501 A 2000","02. ACIMA DE 500",0,3,1900],
+  ["202507",139630,1,"11. 2001 A 3000","02. ACIMA DE 500",0,1,2700],
+  ["202507",139630,1,"12. ACIMA DE 3000","02. ACIMA DE 500",0,3,4700],
+  ["202507",139630,1,"01. ATE 100","01. ATE 500",1,31984,100],
+  ["202507",139630,1,"02. ATE 200","01. ATE 500",1,46576,200],
+  ["202507",139630,1,"03. ATE 300","01. ATE 500",1,11133,300],
+  ["202507",139630,1,"04. ATE 500","01. ATE 500",1,1289,500],
+  ["202507",139630,1,"05. 501 A 700","02. ACIMA DE 500",1,4,700],
+  ["202507",139630,1,"06. 701 A 900","02. ACIMA DE 500",1,3,900],
+  ["202507",139630,1,"07. 901 A 1000","02. ACIMA DE 500",1,2,1000],
+  ["202507",139630,1,"08. 1001 A 1300","02. ACIMA DE 500",1,12,1192],
+  ["202507",139630,1,"09. 1301 A 1500","02. ACIMA DE 500",1,7,1443],
+  ["202507",139630,1,"10. 1501 A 2000","02. ACIMA DE 500",1,24,1775],
+  ["202507",139630,1,"11. 2001 A 3000","02. ACIMA DE 500",1,16,2356],
+  ["202507",139630,1,"12. ACIMA DE 3000","02. ACIMA DE 500",1,28,5175],
+  ["202507",139630,2,"01. ATE 100","01. ATE 500",0,29833,100],
+  ["202507",139630,2,"02. ATE 200","01. ATE 500",0,5216,200],
+  ["202507",139630,2,"03. ATE 300","01. ATE 500",0,7146,300],
+  ["202507",139630,2,"04. ATE 500","01. ATE 500",0,905,457],
+  ["202507",139630,2,"06. 701 A 900","02. ACIMA DE 500",0,2,800],
+  ["202507",139630,2,"07. 901 A 1000","02. ACIMA DE 500",0,19,1000],
+  ["202507",139630,2,"10. 1501 A 2000","02. ACIMA DE 500",0,2,1850],
+  ["202507",139630,2,"12. ACIMA DE 3000","02. ACIMA DE 500",0,2,4500],
+  ["202507",139630,2,"01. ATE 100","01. ATE 500",1,23675,100],
+  ["202507",139630,2,"02. ATE 200","01. ATE 500",1,24374,200],
+  ["202507",139630,2,"03. ATE 300","01. ATE 500",1,42318,300],
+  ["202507",139630,2,"04. ATE 500","01. ATE 500",1,6030,438],
+  ["202507",139630,2,"05. 501 A 700","02. ACIMA DE 500",1,4,700],
+  ["202507",139630,2,"06. 701 A 900","02. ACIMA DE 500",1,4,900],
+  ["202507",139630,2,"07. 901 A 1000","02. ACIMA DE 500",1,10,1000],
+  ["202507",139630,2,"08. 1001 A 1300","02. ACIMA DE 500",1,12,1192],
+  ["202507",139630,2,"09. 1301 A 1500","02. ACIMA DE 500",1,7,1443],
+  ["202507",139630,2,"10. 1501 A 2000","02. ACIMA DE 500",1,25,1784],
+  ["202507",139630,2,"11. 2001 A 3000","02. ACIMA DE 500",1,17,2376],
+  ["202507",139630,2,"12. ACIMA DE 3000","02. ACIMA DE 500",1,29,5172],
+  ["202507",139630,3,"01. ATE 100","01. ATE 500",0,25858,100],
+  ["202507",139630,3,"02. ATE 200","01. ATE 500",0,4076,200],
+  ["202507",139630,3,"03. ATE 300","01. ATE 500",0,6935,300],
+  ["202507",139630,3,"04. ATE 500","01. ATE 500",0,1954,448],
+  ["202507",139630,3,"06. 701 A 900","02. ACIMA DE 500",0,1,800],
+  ["202507",139630,3,"07. 901 A 1000","02. ACIMA DE 500",0,14,1000],
+  ["202507",139630,3,"10. 1501 A 2000","02. ACIMA DE 500",0,2,1850],
+  ["202507",139630,3,"12. ACIMA DE 3000","02. ACIMA DE 500",0,1,14900],
+  ["202507",139630,3,"01. ATE 100","01. ATE 500",1,20651,100],
+  ["202507",139630,3,"02. ATE 200","01. ATE 500",1,17146,200],
+  ["202507",139630,3,"03. ATE 300","01. ATE 500",1,46016,300],
+  ["202507",139630,3,"04. ATE 500","01. ATE 500",1,16861,425],
+  ["202507",139630,3,"05. 501 A 700","02. ACIMA DE 500",1,4,700],
+  ["202507",139630,3,"06. 701 A 900","02. ACIMA DE 500",1,5,880],
+  ["202507",139630,3,"07. 901 A 1000","02. ACIMA DE 500",1,15,1000],
+  ["202507",139630,3,"08. 1001 A 1300","02. ACIMA DE 500",1,12,1192],
+  ["202507",139630,3,"09. 1301 A 1500","02. ACIMA DE 500",1,7,1443],
+  ["202507",139630,3,"10. 1501 A 2000","02. ACIMA DE 500",1,25,1784],
+  ["202507",139630,3,"11. 2001 A 3000","02. ACIMA DE 500",1,17,2376],
+  ["202507",139630,3,"12. ACIMA DE 3000","02. ACIMA DE 500",1,30,4803],
+  ["202507",139630,4,"01. ATE 100","01. ATE 500",0,23429,100],
+  ["202507",139630,4,"02. ATE 200","01. ATE 500",0,4408,200],
+  ["202507",139630,4,"03. ATE 300","01. ATE 500",0,7196,300],
+  ["202507",139630,4,"04. ATE 500","01. ATE 500",0,3048,461],
+  ["202507",139630,4,"05. 501 A 700","02. ACIMA DE 500",0,15,700],
+  ["202507",139630,4,"06. 701 A 900","02. ACIMA DE 500",0,23,891],
+  ["202507",139630,4,"07. 901 A 1000","02. ACIMA DE 500",0,19,1000],
+  ["202507",139630,4,"08. 1001 A 1300","02. ACIMA DE 500",0,1,1300],
+  ["202507",139630,4,"09. 1301 A 1500","02. ACIMA DE 500",0,1,1500],
+  ["202507",139630,4,"10. 1501 A 2000","02. ACIMA DE 500",0,4,1850],
+  ["202507",139630,4,"11. 2001 A 3000","02. ACIMA DE 500",0,4,2350],
+  ["202507",139630,4,"12. ACIMA DE 3000","02. ACIMA DE 500",0,9,6178],
+  ["202507",139630,4,"01. ATE 100","01. ATE 500",1,16997,100],
+  ["202507",139630,4,"02. ATE 200","01. ATE 500",1,13702,200],
+  ["202507",139630,4,"03. ATE 300","01. ATE 500",1,43486,300],
+  ["202507",139630,4,"04. ATE 500","01. ATE 500",1,26534,449],
+  ["202507",139630,4,"05. 501 A 700","02. ACIMA DE 500",1,140,683],
+  ["202507",139630,4,"06. 701 A 900","02. ACIMA DE 500",1,264,894],
+  ["202507",139630,4,"07. 901 A 1000","02. ACIMA DE 500",1,33,1000],
+  ["202507",139630,4,"08. 1001 A 1300","02. ACIMA DE 500",1,21,1210],
+  ["202507",139630,4,"09. 1301 A 1500","02. ACIMA DE 500",1,29,1452],
+  ["202507",139630,4,"10. 1501 A 2000","02. ACIMA DE 500",1,72,1794],
+  ["202507",139630,4,"11. 2001 A 3000","02. ACIMA DE 500",1,81,2579],
+  ["202507",139630,4,"12. ACIMA DE 3000","02. ACIMA DE 500",1,114,4972],
+  ["202507",139630,5,"01. ATE 100","01. ATE 500",0,23088,100],
+  ["202507",139630,5,"02. ATE 200","01. ATE 500",0,4637,200],
+  ["202507",139630,5,"03. ATE 300","01. ATE 500",0,7472,300],
+  ["202507",139630,5,"04. ATE 500","01. ATE 500",0,3955,468],
+  ["202507",139630,5,"05. 501 A 700","02. ACIMA DE 500",0,89,691],
+  ["202507",139630,5,"06. 701 A 900","02. ACIMA DE 500",0,138,890],
+  ["202507",139630,5,"07. 901 A 1000","02. ACIMA DE 500",0,89,1000],
+  ["202507",139630,5,"08. 1001 A 1300","02. ACIMA DE 500",0,5,1200],
+  ["202507",139630,5,"09. 1301 A 1500","02. ACIMA DE 500",0,4,1425],
+  ["202507",139630,5,"10. 1501 A 2000","02. ACIMA DE 500",0,9,1889],
+  ["202507",139630,5,"11. 2001 A 3000","02. ACIMA DE 500",0,9,2567],
+  ["202507",139630,5,"12. ACIMA DE 3000","02. ACIMA DE 500",0,6,9317],
+  ["202507",139630,5,"01. ATE 100","01. ATE 500",1,14050,100],
+  ["202507",139630,5,"02. ATE 200","01. ATE 500",1,10728,200],
+  ["202507",139630,5,"03. ATE 300","01. ATE 500",1,38382,300],
+  ["202507",139630,5,"04. ATE 500","01. ATE 500",1,34390,462],
+  ["202507",139630,5,"05. 501 A 700","02. ACIMA DE 500",1,651,692],
+  ["202507",139630,5,"06. 701 A 900","02. ACIMA DE 500",1,1261,897],
+  ["202507",139630,5,"07. 901 A 1000","02. ACIMA DE 500",1,85,1000],
+  ["202507",139630,5,"08. 1001 A 1300","02. ACIMA DE 500",1,60,1217],
+  ["202507",139630,5,"09. 1301 A 1500","02. ACIMA DE 500",1,52,1446],
+  ["202507",139630,5,"10. 1501 A 2000","02. ACIMA DE 500",1,123,1793],
+  ["202507",139630,5,"11. 2001 A 3000","02. ACIMA DE 500",1,134,2551],
+  ["202507",139630,5,"12. ACIMA DE 3000","02. ACIMA DE 500",1,213,4891],
+  ["202507",139630,6,"01. ATE 100","01. ATE 500",0,22109,100],
+  ["202507",139630,6,"02. ATE 200","01. ATE 500",0,4535,200],
+  ["202507",139630,6,"03. ATE 300","01. ATE 500",0,6917,300],
+  ["202507",139630,6,"04. ATE 500","01. ATE 500",0,3883,469],
+  ["202507",139630,6,"05. 501 A 700","02. ACIMA DE 500",0,169,688],
+  ["202507",139630,6,"06. 701 A 900","02. ACIMA DE 500",0,277,890],
+  ["202507",139630,6,"07. 901 A 1000","02. ACIMA DE 500",0,411,1000],
+  ["202507",139630,6,"08. 1001 A 1300","02. ACIMA DE 500",0,12,1192],
+  ["202507",139630,6,"09. 1301 A 1500","02. ACIMA DE 500",0,11,1455],
+  ["202507",139630,6,"10. 1501 A 2000","02. ACIMA DE 500",0,25,1844],
+  ["202507",139630,6,"11. 2001 A 3000","02. ACIMA DE 500",0,19,2495],
+  ["202507",139630,6,"12. ACIMA DE 3000","02. ACIMA DE 500",0,10,7270],
+  ["202507",139630,6,"01. ATE 100","01. ATE 500",1,12826,100],
+  ["202507",139630,6,"02. ATE 200","01. ATE 500",1,9266,200],
+  ["202507",139630,6,"03. ATE 300","01. ATE 500",1,33890,300],
+  ["202507",139630,6,"04. ATE 500","01. ATE 500",1,39673,469],
+  ["202507",139630,6,"05. 501 A 700","02. ACIMA DE 500",1,1532,690],
+  ["202507",139630,6,"06. 701 A 900","02. ACIMA DE 500",1,2863,896],
+  ["202507",139630,6,"07. 901 A 1000","02. ACIMA DE 500",1,215,1000],
+  ["202507",139630,6,"08. 1001 A 1300","02. ACIMA DE 500",1,128,1207],
+  ["202507",139630,6,"09. 1301 A 1500","02. ACIMA DE 500",1,102,1453],
+  ["202507",139630,6,"10. 1501 A 2000","02. ACIMA DE 500",1,202,1805],
+  ["202507",139630,6,"11. 2001 A 3000","02. ACIMA DE 500",1,229,2542],
+  ["202507",139630,6,"12. ACIMA DE 3000","02. ACIMA DE 500",1,326,4798],
+  ["202507",139630,7,"01. ATE 100","01. ATE 500",0,21746,100],
+  ["202507",139630,7,"02. ATE 200","01. ATE 500",0,4824,200],
+  ["202507",139630,7,"03. ATE 300","01. ATE 500",0,7300,300],
+  ["202507",139630,7,"04. ATE 500","01. ATE 500",0,3914,467],
+  ["202507",139630,7,"05. 501 A 700","02. ACIMA DE 500",0,458,671],
+  ["202507",139630,7,"06. 701 A 900","02. ACIMA DE 500",0,505,888],
+  ["202507",139630,7,"07. 901 A 1000","02. ACIMA DE 500",0,562,999],
+  ["202507",139630,7,"08. 1001 A 1300","02. ACIMA DE 500",0,47,1217],
+  ["202507",139630,7,"09. 1301 A 1500","02. ACIMA DE 500",0,38,1447],
+  ["202507",139630,7,"10. 1501 A 2000","02. ACIMA DE 500",0,37,1792],
+  ["202507",139630,7,"11. 2001 A 3000","02. ACIMA DE 500",0,23,2461],
+  ["202507",139630,7,"12. ACIMA DE 3000","02. ACIMA DE 500",0,16,6750],
+  ["202507",139630,7,"01. ATE 100","01. ATE 500",1,11302,100],
+  ["202507",139630,7,"02. ATE 200","01. ATE 500",1,7930,200],
+  ["202507",139630,7,"03. ATE 300","01. ATE 500",1,29508,300],
+  ["202507",139630,7,"04. ATE 500","01. ATE 500",1,37794,471],
+  ["202507",139630,7,"05. 501 A 700","02. ACIMA DE 500",1,5261,664],
+  ["202507",139630,7,"06. 701 A 900","02. ACIMA DE 500",1,5963,889],
+  ["202507",139630,7,"07. 901 A 1000","02. ACIMA DE 500",1,503,997],
+  ["202507",139630,7,"08. 1001 A 1300","02. ACIMA DE 500",1,556,1207],
+  ["202507",139630,7,"09. 1301 A 1500","02. ACIMA DE 500",1,299,1456],
+  ["202507",139630,7,"10. 1501 A 2000","02. ACIMA DE 500",1,304,1776],
+  ["202507",139630,7,"11. 2001 A 3000","02. ACIMA DE 500",1,338,2525],
+  ["202507",139630,7,"12. ACIMA DE 3000","02. ACIMA DE 500",1,403,4828],
+  ["202507",139630,8,"01. ATE 100","01. ATE 500",0,19801,100],
+  ["202507",139630,8,"02. ATE 200","01. ATE 500",0,4936,200],
+  ["202507",139630,8,"03. ATE 300","01. ATE 500",0,7615,300],
+  ["202507",139630,8,"04. ATE 500","01. ATE 500",0,5079,475],
+  ["202507",139630,8,"05. 501 A 700","02. ACIMA DE 500",0,593,669],
+  ["202507",139630,8,"06. 701 A 900","02. ACIMA DE 500",0,553,883],
+  ["202507",139630,8,"07. 901 A 1000","02. ACIMA DE 500",0,648,998],
+  ["202507",139630,8,"08. 1001 A 1300","02. ACIMA DE 500",0,111,1223],
+  ["202507",139630,8,"09. 1301 A 1500","02. ACIMA DE 500",0,54,1446],
+  ["202507",139630,8,"10. 1501 A 2000","02. ACIMA DE 500",0,78,1790],
+  ["202507",139630,8,"11. 2001 A 3000","02. ACIMA DE 500",0,35,2486],
+  ["202507",139630,8,"12. ACIMA DE 3000","02. ACIMA DE 500",0,36,6294],
+  ["202507",139630,8,"01. ATE 100","01. ATE 500",1,10009,100],
+  ["202507",139630,8,"02. ATE 200","01. ATE 500",1,7018,200],
+  ["202507",139630,8,"03. ATE 300","01. ATE 500",1,26343,300],
+  ["202507",139630,8,"04. ATE 500","01. ATE 500",1,37964,474],
+  ["202507",139630,8,"05. 501 A 700","02. ACIMA DE 500",1,7136,662],
+  ["202507",139630,8,"06. 701 A 900","02. ACIMA DE 500",1,7273,887],
+  ["202507",139630,8,"07. 901 A 1000","02. ACIMA DE 500",1,958,989],
+  ["202507",139630,8,"08. 1001 A 1300","02. ACIMA DE 500",1,1409,1230],
+  ["202507",139630,8,"09. 1301 A 1500","02. ACIMA DE 500",1,492,1453],
+  ["202507",139630,8,"10. 1501 A 2000","02. ACIMA DE 500",1,473,1764],
+  ["202507",139630,8,"11. 2001 A 3000","02. ACIMA DE 500",1,458,2497],
+  ["202507",139630,8,"12. ACIMA DE 3000","02. ACIMA DE 500",1,599,5551],
+  ["202508",129972,0,"01. ATE 100","01. ATE 500",0,129972,120],
+  ["202508",129972,1,"01. ATE 100","01. ATE 500",0,35654,100],
+  ["202508",129972,1,"02. ATE 200","01. ATE 500",0,6953,200],
+  ["202508",129972,1,"03. ATE 300","01. ATE 500",0,4677,300],
+  ["202508",129972,1,"04. ATE 500","01. ATE 500",0,563,442],
+  ["202508",129972,1,"01. ATE 100","01. ATE 500",1,28865,100],
+  ["202508",129972,1,"02. ATE 200","01. ATE 500",1,41751,200],
+  ["202508",129972,1,"03. ATE 300","01. ATE 500",1,8596,300],
+  ["202508",129972,1,"04. ATE 500","01. ATE 500",1,2909,420],
+  ["202508",129972,1,"10. 1501 A 2000","02. ACIMA DE 500",1,2,1700],
+  ["202508",129972,1,"12. ACIMA DE 3000","02. ACIMA DE 500",1,2,4700],
+  ["202508",129972,2,"01. ATE 100","01. ATE 500",0,29270,100],
+  ["202508",129972,2,"02. ATE 200","01. ATE 500",0,4937,200],
+  ["202508",129972,2,"03. ATE 300","01. ATE 500",0,6619,300],
+  ["202508",129972,2,"04. ATE 500","01. ATE 500",0,1075,454],
+  ["202508",129972,2,"01. ATE 100","01. ATE 500",1,22661,100],
+  ["202508",129972,2,"02. ATE 200","01. ATE 500",1,22569,200],
+  ["202508",129972,2,"03. ATE 300","01. ATE 500",1,37388,300],
+  ["202508",129972,2,"04. ATE 500","01. ATE 500",1,5448,433],
+  ["202508",129972,2,"05. 501 A 700","02. ACIMA DE 500",1,1,700],
+  ["202508",129972,2,"10. 1501 A 2000","02. ACIMA DE 500",1,2,1700],
+  ["202508",129972,2,"12. ACIMA DE 3000","02. ACIMA DE 500",1,2,4700],
+  ["202508",129972,3,"01. ATE 100","01. ATE 500",0,25640,100],
+  ["202508",129972,3,"02. ATE 200","01. ATE 500",0,4073,200],
+  ["202508",129972,3,"03. ATE 300","01. ATE 500",0,6858,300],
+  ["202508",129972,3,"04. ATE 500","01. ATE 500",0,2126,456],
+  ["202508",129972,3,"06. 701 A 900","02. ACIMA DE 500",0,1,800],
+  ["202508",129972,3,"09. 1301 A 1500","02. ACIMA DE 500",0,1,1500],
+  ["202508",129972,3,"10. 1501 A 2000","02. ACIMA DE 500",0,2,1700],
+  ["202508",129972,3,"11. 2001 A 3000","02. ACIMA DE 500",0,1,2500],
+  ["202508",129972,3,"12. ACIMA DE 3000","02. ACIMA DE 500",0,2,4950],
+  ["202508",129972,3,"01. ATE 100","01. ATE 500",1,19472,100],
+  ["202508",129972,3,"02. ATE 200","01. ATE 500",1,15616,200],
+  ["202508",129972,3,"03. ATE 300","01. ATE 500",1,42051,300],
+  ["202508",129972,3,"04. ATE 500","01. ATE 500",1,14041,437],
+  ["202508",129972,3,"05. 501 A 700","02. ACIMA DE 500",1,6,650],
+  ["202508",129972,3,"06. 701 A 900","02. ACIMA DE 500",1,2,850],
+  ["202508",129972,3,"07. 901 A 1000","02. ACIMA DE 500",1,1,1000],
+  ["202508",129972,3,"08. 1001 A 1300","02. ACIMA DE 500",1,6,1167],
+  ["202508",129972,3,"09. 1301 A 1500","02. ACIMA DE 500",1,4,1400],
+  ["202508",129972,3,"10. 1501 A 2000","02. ACIMA DE 500",1,23,1796],
+  ["202508",129972,3,"11. 2001 A 3000","02. ACIMA DE 500",1,18,2511],
+  ["202508",129972,3,"12. ACIMA DE 3000","02. ACIMA DE 500",1,28,5232],
+  ["202508",129972,4,"01. ATE 100","01. ATE 500",0,25128,100],
+  ["202508",129972,4,"02. ATE 200","01. ATE 500",0,3829,200],
+  ["202508",129972,4,"03. ATE 300","01. ATE 500",0,7032,300],
+  ["202508",129972,4,"04. ATE 500","01. ATE 500",0,3215,462],
+  ["202508",129972,4,"05. 501 A 700","02. ACIMA DE 500",0,30,695],
+  ["202508",129972,4,"06. 701 A 900","02. ACIMA DE 500",0,67,887],
+  ["202508",129972,4,"07. 901 A 1000","02. ACIMA DE 500",0,28,1000],
+  ["202508",129972,4,"08. 1001 A 1300","02. ACIMA DE 500",0,3,1167],
+  ["202508",129972,4,"09. 1301 A 1500","02. ACIMA DE 500",0,1,1500],
+  ["202508",129972,4,"10. 1501 A 2000","02. ACIMA DE 500",0,4,1725],
+  ["202508",129972,4,"11. 2001 A 3000","02. ACIMA DE 500",0,2,2850],
+  ["202508",129972,4,"12. ACIMA DE 3000","02. ACIMA DE 500",0,4,6450],
+  ["202508",129972,4,"01. ATE 100","01. ATE 500",1,15751,100],
+  ["202508",129972,4,"02. ATE 200","01. ATE 500",1,12159,200],
+  ["202508",129972,4,"03. ATE 300","01. ATE 500",1,38579,300],
+  ["202508",129972,4,"04. ATE 500","01. ATE 500",1,23368,450],
+  ["202508",129972,4,"05. 501 A 700","02. ACIMA DE 500",1,192,696],
+  ["202508",129972,4,"06. 701 A 900","02. ACIMA DE 500",1,382,898],
+  ["202508",129972,4,"07. 901 A 1000","02. ACIMA DE 500",1,29,1000],
+  ["202508",129972,4,"08. 1001 A 1300","02. ACIMA DE 500",1,22,1236],
+  ["202508",129972,4,"09. 1301 A 1500","02. ACIMA DE 500",1,11,1418],
+  ["202508",129972,4,"10. 1501 A 2000","02. ACIMA DE 500",1,29,1803],
+  ["202508",129972,4,"11. 2001 A 3000","02. ACIMA DE 500",1,45,2551],
+  ["202508",129972,4,"12. ACIMA DE 3000","02. ACIMA DE 500",1,62,4994],
+  ["202508",129972,5,"01. ATE 100","01. ATE 500",0,24084,100],
+  ["202508",129972,5,"02. ATE 200","01. ATE 500",0,3654,200],
+  ["202508",129972,5,"03. ATE 300","01. ATE 500",0,6227,300],
+  ["202508",129972,5,"04. ATE 500","01. ATE 500",0,3377,465],
+  ["202508",129972,5,"05. 501 A 700","02. ACIMA DE 500",0,97,695],
+  ["202508",129972,5,"06. 701 A 900","02. ACIMA DE 500",0,183,885],
+  ["202508",129972,5,"07. 901 A 1000","02. ACIMA DE 500",0,376,1000],
+  ["202508",129972,5,"08. 1001 A 1300","02. ACIMA DE 500",0,8,1150],
+  ["202508",129972,5,"09. 1301 A 1500","02. ACIMA DE 500",0,5,1480],
+  ["202508",129972,5,"10. 1501 A 2000","02. ACIMA DE 500",0,10,1890],
+  ["202508",129972,5,"11. 2001 A 3000","02. ACIMA DE 500",0,16,2519],
+  ["202508",129972,5,"12. ACIMA DE 3000","02. ACIMA DE 500",0,9,6011],
+  ["202508",129972,5,"01. ATE 100","01. ATE 500",1,14043,100],
+  ["202508",129972,5,"02. ATE 200","01. ATE 500",1,10283,200],
+  ["202508",129972,5,"03. ATE 300","01. ATE 500",1,34112,300],
+  ["202508",129972,5,"04. ATE 500","01. ATE 500",1,30802,462],
+  ["202508",129972,5,"05. 501 A 700","02. ACIMA DE 500",1,725,692],
+  ["202508",129972,5,"06. 701 A 900","02. ACIMA DE 500",1,1359,896],
+  ["202508",129972,5,"07. 901 A 1000","02. ACIMA DE 500",1,137,1000],
+  ["202508",129972,5,"08. 1001 A 1300","02. ACIMA DE 500",1,68,1200],
+  ["202508",129972,5,"09. 1301 A 1500","02. ACIMA DE 500",1,40,1438],
+  ["202508",129972,5,"10. 1501 A 2000","02. ACIMA DE 500",1,88,1828],
+  ["202508",129972,5,"11. 2001 A 3000","02. ACIMA DE 500",1,115,2534],
+  ["202508",129972,5,"12. ACIMA DE 3000","02. ACIMA DE 500",1,154,4632],
+  ["202508",129972,6,"01. ATE 100","01. ATE 500",0,23473,100],
+  ["202508",129972,6,"02. ATE 200","01. ATE 500",0,4040,200],
+  ["202508",129972,6,"03. ATE 300","01. ATE 500",0,6376,300],
+  ["202508",129972,6,"04. ATE 500","01. ATE 500",0,3401,465],
+  ["202508",129972,6,"05. 501 A 700","02. ACIMA DE 500",0,390,667],
+  ["202508",129972,6,"06. 701 A 900","02. ACIMA DE 500",0,382,880],
+  ["202508",129972,6,"07. 901 A 1000","02. ACIMA DE 500",0,513,1000],
+  ["202508",129972,6,"08. 1001 A 1300","02. ACIMA DE 500",0,29,1179],
+  ["202508",129972,6,"09. 1301 A 1500","02. ACIMA DE 500",0,23,1474],
+  ["202508",129972,6,"10. 1501 A 2000","02. ACIMA DE 500",0,13,1777],
+  ["202508",129972,6,"11. 2001 A 3000","02. ACIMA DE 500",0,18,2456],
+  ["202508",129972,6,"12. ACIMA DE 3000","02. ACIMA DE 500",0,18,4844],
+  ["202508",129972,6,"01. ATE 100","01. ATE 500",1,12288,100],
+  ["202508",129972,6,"02. ATE 200","01. ATE 500",1,8742,200],
+  ["202508",129972,6,"03. ATE 300","01. ATE 500",1,29780,300],
+  ["202508",129972,6,"04. ATE 500","01. ATE 500",1,31509,466],
+  ["202508",129972,6,"05. 501 A 700","02. ACIMA DE 500",1,3860,662],
+  ["202508",129972,6,"06. 701 A 900","02. ACIMA DE 500",1,3771,888],
+  ["202508",129972,6,"07. 901 A 1000","02. ACIMA DE 500",1,375,1000],
+  ["202508",129972,6,"08. 1001 A 1300","02. ACIMA DE 500",1,297,1186],
+  ["202508",129972,6,"09. 1301 A 1500","02. ACIMA DE 500",1,141,1460],
+  ["202508",129972,6,"10. 1501 A 2000","02. ACIMA DE 500",1,150,1806],
+  ["202508",129972,6,"11. 2001 A 3000","02. ACIMA DE 500",1,181,2523],
+  ["202508",129972,6,"12. ACIMA DE 3000","02. ACIMA DE 500",1,202,4810],
+  ["202508",129972,7,"01. ATE 100","01. ATE 500",0,21230,100],
+  ["202508",129972,7,"02. ATE 200","01. ATE 500",0,4128,200],
+  ["202508",129972,7,"03. ATE 300","01. ATE 500",0,6322,300],
+  ["202508",129972,7,"04. ATE 500","01. ATE 500",0,4636,477],
+  ["202508",129972,7,"05. 501 A 700","02. ACIMA DE 500",0,511,663],
+  ["202508",129972,7,"06. 701 A 900","02. ACIMA DE 500",0,462,878],
+  ["202508",129972,7,"07. 901 A 1000","02. ACIMA DE 500",0,576,1000],
+  ["202508",129972,7,"08. 1001 A 1300","02. ACIMA DE 500",0,83,1213],
+  ["202508",129972,7,"09. 1301 A 1500","02. ACIMA DE 500",0,28,1446],
+  ["202508",129972,7,"10. 1501 A 2000","02. ACIMA DE 500",0,41,1793],
+  ["202508",129972,7,"11. 2001 A 3000","02. ACIMA DE 500",0,18,2456],
+  ["202508",129972,7,"12. ACIMA DE 3000","02. ACIMA DE 500",0,17,5153],
+  ["202508",129972,7,"01. ATE 100","01. ATE 500",1,10827,100],
+  ["202508",129972,7,"02. ATE 200","01. ATE 500",1,7551,200],
+  ["202508",129972,7,"03. ATE 300","01. ATE 500",1,26981,300],
+  ["202508",129972,7,"04. ATE 500","01. ATE 500",1,32600,471],
+  ["202508",129972,7,"05. 501 A 700","02. ACIMA DE 500",1,5915,661],
+  ["202508",129972,7,"06. 701 A 900","02. ACIMA DE 500",1,5304,886],
+  ["202508",129972,7,"07. 901 A 1000","02. ACIMA DE 500",1,733,995],
+  ["202508",129972,7,"08. 1001 A 1300","02. ACIMA DE 500",1,815,1206],
+  ["202508",129972,7,"09. 1301 A 1500","02. ACIMA DE 500",1,269,1451],
+  ["202508",129972,7,"10. 1501 A 2000","02. ACIMA DE 500",1,310,1758],
+  ["202508",129972,7,"11. 2001 A 3000","02. ACIMA DE 500",1,279,2506],
+  ["202508",129972,7,"12. ACIMA DE 3000","02. ACIMA DE 500",1,357,5117],
+  ["202509",121336,0,"01. ATE 100","01. ATE 500",0,121336,120],
+  ["202509",121336,1,"01. ATE 100","01. ATE 500",0,32733,100],
+  ["202509",121336,1,"02. ATE 200","01. ATE 500",0,6089,200],
+  ["202509",121336,1,"03. ATE 300","01. ATE 500",0,4088,300],
+  ["202509",121336,1,"04. ATE 500","01. ATE 500",0,766,448],
+  ["202509",121336,1,"05. 501 A 700","02. ACIMA DE 500",0,5,680],
+  ["202509",121336,1,"06. 701 A 900","02. ACIMA DE 500",0,10,845],
+  ["202509",121336,1,"08. 1001 A 1300","02. ACIMA DE 500",0,7,1177],
+  ["202509",121336,1,"09. 1301 A 1500","02. ACIMA DE 500",0,7,1427],
+  ["202509",121336,1,"10. 1501 A 2000","02. ACIMA DE 500",0,7,1814],
+  ["202509",121336,1,"11. 2001 A 3000","02. ACIMA DE 500",0,6,2550],
+  ["202509",121336,1,"12. ACIMA DE 3000","02. ACIMA DE 500",0,11,6383],
+  ["202509",121336,1,"01. ATE 100","01. ATE 500",1,30305,100],
+  ["202509",121336,1,"02. ATE 200","01. ATE 500",1,37423,200],
+  ["202509",121336,1,"03. ATE 300","01. ATE 500",1,6123,300],
+  ["202509",121336,1,"04. ATE 500","01. ATE 500",1,3864,416],
+  ["202509",121336,2,"01. ATE 100","01. ATE 500",0,26955,100],
+  ["202509",121336,2,"02. ATE 200","01. ATE 500",0,4730,200],
+  ["202509",121336,2,"03. ATE 300","01. ATE 500",0,5633,300],
+  ["202509",121336,2,"04. ATE 500","01. ATE 500",0,1311,469],
+  ["202509",121336,2,"05. 501 A 700","02. ACIMA DE 500",0,6,667],
+  ["202509",121336,2,"06. 701 A 900","02. ACIMA DE 500",0,10,845],
+  ["202509",121336,2,"08. 1001 A 1300","02. ACIMA DE 500",0,8,1168],
+  ["202509",121336,2,"09. 1301 A 1500","02. ACIMA DE 500",0,7,1427],
+  ["202509",121336,2,"10. 1501 A 2000","02. ACIMA DE 500",0,8,1800],
+  ["202509",121336,2,"11. 2001 A 3000","02. ACIMA DE 500",0,7,2557],
+  ["202509",121336,2,"12. ACIMA DE 3000","02. ACIMA DE 500",0,16,6195],
+  ["202509",121336,2,"01. ATE 100","01. ATE 500",1,22250,100],
+  ["202509",121336,2,"02. ATE 200","01. ATE 500",1,22178,200],
+  ["202509",121336,2,"03. ATE 300","01. ATE 500",1,32142,300],
+  ["202509",121336,2,"04. ATE 500","01. ATE 500",1,6162,460],
+  ["202509",121336,2,"05. 501 A 700","02. ACIMA DE 500",1,3,600],
+  ["202509",121336,2,"06. 701 A 900","02. ACIMA DE 500",1,1,800],
+  ["202509",121336,2,"08. 1001 A 1300","02. ACIMA DE 500",1,2,1200],
+  ["202509",121336,2,"09. 1301 A 1500","02. ACIMA DE 500",1,1,1500],
+  ["202509",121336,2,"11. 2001 A 3000","02. ACIMA DE 500",1,1,2700],
+  ["202509",121336,2,"12. ACIMA DE 3000","02. ACIMA DE 500",1,14,5314],
+  ["202509",121336,3,"01. ATE 100","01. ATE 500",0,24300,100],
+  ["202509",121336,3,"02. ATE 200","01. ATE 500",0,4011,200],
+  ["202509",121336,3,"03. ATE 300","01. ATE 500",0,6258,300],
+  ["202509",121336,3,"04. ATE 500","01. ATE 500",0,2477,464],
+  ["202509",121336,3,"05. 501 A 700","02. ACIMA DE 500",0,6,667],
+  ["202509",121336,3,"06. 701 A 900","02. ACIMA DE 500",0,11,841],
+  ["202509",121336,3,"08. 1001 A 1300","02. ACIMA DE 500",0,9,1171],
+  ["202509",121336,3,"09. 1301 A 1500","02. ACIMA DE 500",0,7,1427],
+  ["202509",121336,3,"10. 1501 A 2000","02. ACIMA DE 500",0,7,1814],
+  ["202509",121336,3,"11. 2001 A 3000","02. ACIMA DE 500",0,9,2556],
+  ["202509",121336,3,"12. ACIMA DE 3000","02. ACIMA DE 500",0,18,6345],
+  ["202509",121336,3,"01. ATE 100","01. ATE 500",1,18604,100],
+  ["202509",121336,3,"02. ATE 200","01. ATE 500",1,14683,200],
+  ["202509",121336,3,"03. ATE 300","01. ATE 500",1,36575,300],
+  ["202509",121336,3,"04. ATE 500","01. ATE 500",1,14412,446],
+  ["202509",121336,3,"05. 501 A 700","02. ACIMA DE 500",1,5,620],
+  ["202509",121336,3,"06. 701 A 900","02. ACIMA DE 500",1,1,800],
+  ["202509",121336,3,"08. 1001 A 1300","02. ACIMA DE 500",1,4,1200],
+  ["202509",121336,3,"09. 1301 A 1500","02. ACIMA DE 500",1,3,1467],
+  ["202509",121336,3,"10. 1501 A 2000","02. ACIMA DE 500",1,6,1783],
+  ["202509",121336,3,"11. 2001 A 3000","02. ACIMA DE 500",1,10,2490],
+  ["202509",121336,3,"12. ACIMA DE 3000","02. ACIMA DE 500",1,32,5153],
+  ["202509",121336,4,"01. ATE 100","01. ATE 500",0,23107,100],
+  ["202509",121336,4,"02. ATE 200","01. ATE 500",0,3245,200],
+  ["202509",121336,4,"03. ATE 300","01. ATE 500",0,5517,300],
+  ["202509",121336,4,"04. ATE 500","01. ATE 500",0,2939,463],
+  ["202509",121336,4,"05. 501 A 700","02. ACIMA DE 500",0,49,692],
+  ["202509",121336,4,"06. 701 A 900","02. ACIMA DE 500",0,103,876],
+  ["202509",121336,4,"07. 901 A 1000","02. ACIMA DE 500",0,347,1000],
+  ["202509",121336,4,"08. 1001 A 1300","02. ACIMA DE 500",0,11,1176],
+  ["202509",121336,4,"09. 1301 A 1500","02. ACIMA DE 500",0,7,1427],
+  ["202509",121336,4,"10. 1501 A 2000","02. ACIMA DE 500",0,10,1820],
+  ["202509",121336,4,"11. 2001 A 3000","02. ACIMA DE 500",0,13,2638],
+  ["202509",121336,4,"12. ACIMA DE 3000","02. ACIMA DE 500",0,23,5670],
+  ["202509",121336,4,"01. ATE 100","01. ATE 500",1,16270,100],
+  ["202509",121336,4,"02. ATE 200","01. ATE 500",1,11832,200],
+  ["202509",121336,4,"03. ATE 300","01. ATE 500",1,33621,300],
+  ["202509",121336,4,"04. ATE 500","01. ATE 500",1,23069,454],
+  ["202509",121336,4,"05. 501 A 700","02. ACIMA DE 500",1,323,697],
+  ["202509",121336,4,"06. 701 A 900","02. ACIMA DE 500",1,629,896],
+  ["202509",121336,4,"07. 901 A 1000","02. ACIMA DE 500",1,92,1000],
+  ["202509",121336,4,"08. 1001 A 1300","02. ACIMA DE 500",1,23,1183],
+  ["202509",121336,4,"09. 1301 A 1500","02. ACIMA DE 500",1,27,1452],
+  ["202509",121336,4,"10. 1501 A 2000","02. ACIMA DE 500",1,35,1774],
+  ["202509",121336,4,"11. 2001 A 3000","02. ACIMA DE 500",1,62,2505],
+  ["202509",121336,4,"12. ACIMA DE 3000","02. ACIMA DE 500",1,97,4858],
+  ["202509",121336,5,"01. ATE 100","01. ATE 500",0,22527,100],
+  ["202509",121336,5,"02. ATE 200","01. ATE 500",0,3367,200],
+  ["202509",121336,5,"03. ATE 300","01. ATE 500",0,5323,300],
+  ["202509",121336,5,"04. ATE 500","01. ATE 500",0,3010,463],
+  ["202509",121336,5,"05. 501 A 700","02. ACIMA DE 500",0,261,667],
+  ["202509",121336,5,"06. 701 A 900","02. ACIMA DE 500",0,315,880],
+  ["202509",121336,5,"07. 901 A 1000","02. ACIMA DE 500",0,491,1000],
+  ["202509",121336,5,"08. 1001 A 1300","02. ACIMA DE 500",0,44,1169],
+  ["202509",121336,5,"09. 1301 A 1500","02. ACIMA DE 500",0,26,1461],
+  ["202509",121336,5,"10. 1501 A 2000","02. ACIMA DE 500",0,15,1733],
+  ["202509",121336,5,"11. 2001 A 3000","02. ACIMA DE 500",0,10,2450],
+  ["202509",121336,5,"12. ACIMA DE 3000","02. ACIMA DE 500",0,22,5733],
+  ["202509",121336,5,"01. ATE 100","01. ATE 500",1,14082,100],
+  ["202509",121336,5,"02. ATE 200","01. ATE 500",1,9993,200],
+  ["202509",121336,5,"03. ATE 300","01. ATE 500",1,30265,300],
+  ["202509",121336,5,"04. ATE 500","01. ATE 500",1,25972,461],
+  ["202509",121336,5,"05. 501 A 700","02. ACIMA DE 500",1,2481,660],
+  ["202509",121336,5,"06. 701 A 900","02. ACIMA DE 500",1,2206,882],
+  ["202509",121336,5,"07. 901 A 1000","02. ACIMA DE 500",1,336,1000],
+  ["202509",121336,5,"08. 1001 A 1300","02. ACIMA DE 500",1,226,1176],
+  ["202509",121336,5,"09. 1301 A 1500","02. ACIMA DE 500",1,149,1458],
+  ["202509",121336,5,"10. 1501 A 2000","02. ACIMA DE 500",1,85,1774],
+  ["202509",121336,5,"11. 2001 A 3000","02. ACIMA DE 500",1,103,2545],
+  ["202509",121336,5,"12. ACIMA DE 3000","02. ACIMA DE 500",1,136,5165],
+  ["202509",121336,6,"01. ATE 100","01. ATE 500",0,19888,100],
+  ["202509",121336,6,"02. ATE 200","01. ATE 500",0,3516,200],
+  ["202509",121336,6,"03. ATE 300","01. ATE 500",0,5193,300],
+  ["202509",121336,6,"04. ATE 500","01. ATE 500",0,4601,478],
+  ["202509",121336,6,"05. 501 A 700","02. ACIMA DE 500",0,414,666],
+  ["202509",121336,6,"06. 701 A 900","02. ACIMA DE 500",0,411,877],
+  ["202509",121336,6,"07. 901 A 1000","02. ACIMA DE 500",0,605,1000],
+  ["202509",121336,6,"08. 1001 A 1300","02. ACIMA DE 500",0,42,1187],
+  ["202509",121336,6,"09. 1301 A 1500","02. ACIMA DE 500",0,33,1454],
+  ["202509",121336,6,"10. 1501 A 2000","02. ACIMA DE 500",0,38,1750],
+  ["202509",121336,6,"11. 2001 A 3000","02. ACIMA DE 500",0,26,2477],
+  ["202509",121336,6,"12. ACIMA DE 3000","02. ACIMA DE 500",0,25,6169],
+  ["202509",121336,6,"01. ATE 100","01. ATE 500",1,12314,100],
+  ["202509",121336,6,"02. ATE 200","01. ATE 500",1,8535,200],
+  ["202509",121336,6,"03. ATE 300","01. ATE 500",1,27394,300],
+  ["202509",121336,6,"04. ATE 500","01. ATE 500",1,28449,468],
+  ["202509",121336,6,"05. 501 A 700","02. ACIMA DE 500",1,4381,661],
+  ["202509",121336,6,"06. 701 A 900","02. ACIMA DE 500",1,3633,883],
+  ["202509",121336,6,"07. 901 A 1000","02. ACIMA DE 500",1,587,1000],
+  ["202509",121336,6,"08. 1001 A 1300","02. ACIMA DE 500",1,497,1182],
+  ["202509",121336,6,"09. 1301 A 1500","02. ACIMA DE 500",1,253,1450],
+  ["202509",121336,6,"10. 1501 A 2000","02. ACIMA DE 500",1,201,1764],
+  ["202509",121336,6,"11. 2001 A 3000","02. ACIMA DE 500",1,177,2496],
+  ["202509",121336,6,"12. ACIMA DE 3000","02. ACIMA DE 500",1,236,5683],
+  ["202510",171490,0,"01. ATE 100","01. ATE 500",0,171490,104],
+  ["202510",171490,1,"01. ATE 100","01. ATE 500",0,49193,100],
+  ["202510",171490,1,"02. ATE 200","01. ATE 500",0,10182,200],
+  ["202510",171490,1,"03. ATE 300","01. ATE 500",0,1127,300],
+  ["202510",171490,1,"04. ATE 500","01. ATE 500",0,628,480],
+  ["202510",171490,1,"05. 501 A 700","02. ACIMA DE 500",0,11,655],
+  ["202510",171490,1,"06. 701 A 900","02. ACIMA DE 500",0,8,825],
+  ["202510",171490,1,"07. 901 A 1000","02. ACIMA DE 500",0,4,1000],
+  ["202510",171490,1,"08. 1001 A 1300","02. ACIMA DE 500",0,15,1197],
+  ["202510",171490,1,"09. 1301 A 1500","02. ACIMA DE 500",0,6,1433],
+  ["202510",171490,1,"10. 1501 A 2000","02. ACIMA DE 500",0,8,1845],
+  ["202510",171490,1,"11. 2001 A 3000","02. ACIMA DE 500",0,8,2544],
+  ["202510",171490,1,"12. ACIMA DE 3000","02. ACIMA DE 500",0,7,6343],
+  ["202510",171490,1,"01. ATE 100","01. ATE 500",1,44617,100],
+  ["202510",171490,1,"02. ATE 200","01. ATE 500",1,61627,200],
+  ["202510",171490,1,"03. ATE 300","01. ATE 500",1,2521,300],
+  ["202510",171490,1,"04. ATE 500","01. ATE 500",1,1652,458],
+  ["202510",171490,1,"06. 701 A 900","02. ACIMA DE 500",1,1,900],
+  ["202510",171490,1,"10. 1501 A 2000","02. ACIMA DE 500",1,1,1700],
+  ["202510",171490,1,"11. 2001 A 3000","02. ACIMA DE 500",1,2,2700],
+  ["202510",171490,1,"12. ACIMA DE 3000","02. ACIMA DE 500",1,1,3400],
+  ["202510",171490,2,"01. ATE 100","01. ATE 500",0,41667,100],
+  ["202510",171490,2,"02. ATE 200","01. ATE 500",0,7731,200],
+  ["202510",171490,2,"03. ATE 300","01. ATE 500",0,5508,300],
+  ["202510",171490,2,"04. ATE 500","01. ATE 500",0,1320,487],
+  ["202510",171490,2,"05. 501 A 700","02. ACIMA DE 500",0,12,650],
+  ["202510",171490,2,"06. 701 A 900","02. ACIMA DE 500",0,8,825],
+  ["202510",171490,2,"07. 901 A 1000","02. ACIMA DE 500",0,5,1000],
+  ["202510",171490,2,"08. 1001 A 1300","02. ACIMA DE 500",0,15,1197],
+  ["202510",171490,2,"09. 1301 A 1500","02. ACIMA DE 500",0,6,1433],
+  ["202510",171490,2,"10. 1501 A 2000","02. ACIMA DE 500",0,9,1851],
+  ["202510",171490,2,"11. 2001 A 3000","02. ACIMA DE 500",0,8,2544],
+  ["202510",171490,2,"12. ACIMA DE 3000","02. ACIMA DE 500",0,8,6388],
+  ["202510",171490,2,"01. ATE 100","01. ATE 500",1,33224,100],
+  ["202510",171490,2,"02. ATE 200","01. ATE 500",1,32341,200],
+  ["202510",171490,2,"03. ATE 300","01. ATE 500",1,45824,300],
+  ["202510",171490,2,"04. ATE 500","01. ATE 500",1,3901,481],
+  ["202510",171490,2,"06. 701 A 900","02. ACIMA DE 500",1,2,850],
+  ["202510",171490,2,"08. 1001 A 1300","02. ACIMA DE 500",1,4,1225],
+  ["202510",171490,2,"09. 1301 A 1500","02. ACIMA DE 500",1,2,1500],
+  ["202510",171490,2,"10. 1501 A 2000","02. ACIMA DE 500",1,4,1825],
+  ["202510",171490,2,"11. 2001 A 3000","02. ACIMA DE 500",1,2,2300],
+  ["202510",171490,2,"12. ACIMA DE 3000","02. ACIMA DE 500",1,15,6053],
+  ["202510",171490,3,"01. ATE 100","01. ATE 500",0,36165,100],
+  ["202510",171490,3,"02. ATE 200","01. ATE 500",0,5810,200],
+  ["202510",171490,3,"03. ATE 300","01. ATE 500",0,5366,300],
+  ["202510",171490,3,"04. ATE 500","01. ATE 500",0,2303,465],
+  ["202510",171490,3,"05. 501 A 700","02. ACIMA DE 500",0,14,664],
+  ["202510",171490,3,"06. 701 A 900","02. ACIMA DE 500",0,25,840],
+  ["202510",171490,3,"07. 901 A 1000","02. ACIMA DE 500",0,278,1000],
+  ["202510",171490,3,"08. 1001 A 1300","02. ACIMA DE 500",0,18,1208],
+  ["202510",171490,3,"09. 1301 A 1500","02. ACIMA DE 500",0,9,1444],
+  ["202510",171490,3,"10. 1501 A 2000","02. ACIMA DE 500",0,11,1851],
+  ["202510",171490,3,"11. 2001 A 3000","02. ACIMA DE 500",0,14,2511],
+  ["202510",171490,3,"12. ACIMA DE 3000","02. ACIMA DE 500",0,13,6154],
+  ["202510",171490,3,"01. ATE 100","01. ATE 500",1,30703,100],
+  ["202510",171490,3,"02. ATE 200","01. ATE 500",1,22780,200],
+  ["202510",171490,3,"03. ATE 300","01. ATE 500",1,51516,300],
+  ["202510",171490,3,"04. ATE 500","01. ATE 500",1,16267,439],
+  ["202510",171490,3,"05. 501 A 700","02. ACIMA DE 500",1,9,689],
+  ["202510",171490,3,"06. 701 A 900","02. ACIMA DE 500",1,17,847],
+  ["202510",171490,3,"07. 901 A 1000","02. ACIMA DE 500",1,58,1000],
+  ["202510",171490,3,"08. 1001 A 1300","02. ACIMA DE 500",1,32,1188],
+  ["202510",171490,3,"09. 1301 A 1500","02. ACIMA DE 500",1,28,1471],
+  ["202510",171490,3,"10. 1501 A 2000","02. ACIMA DE 500",1,43,1772],
+  ["202510",171490,3,"11. 2001 A 3000","02. ACIMA DE 500",1,56,2475],
+  ["202510",171490,3,"12. ACIMA DE 3000","02. ACIMA DE 500",1,88,5041],
+  ["202510",171490,4,"01. ATE 100","01. ATE 500",0,35236,100],
+  ["202510",171490,4,"02. ATE 200","01. ATE 500",0,5207,200],
+  ["202510",171490,4,"03. ATE 300","01. ATE 500",0,5315,300],
+  ["202510",171490,4,"04. ATE 500","01. ATE 500",0,2968,463],
+  ["202510",171490,4,"05. 501 A 700","02. ACIMA DE 500",0,118,658],
+  ["202510",171490,4,"06. 701 A 900","02. ACIMA DE 500",0,120,871],
+  ["202510",171490,4,"07. 901 A 1000","02. ACIMA DE 500",0,459,1000],
+  ["202510",171490,4,"08. 1001 A 1300","02. ACIMA DE 500",0,33,1198],
+  ["202510",171490,4,"09. 1301 A 1500","02. ACIMA DE 500",0,12,1442],
+  ["202510",171490,4,"10. 1501 A 2000","02. ACIMA DE 500",0,12,1847],
+  ["202510",171490,4,"11. 2001 A 3000","02. ACIMA DE 500",0,14,2518],
+  ["202510",171490,4,"12. ACIMA DE 3000","02. ACIMA DE 500",0,15,5067],
+  ["202510",171490,4,"01. ATE 100","01. ATE 500",1,25895,100],
+  ["202510",171490,4,"02. ATE 200","01. ATE 500",1,19072,200],
+  ["202510",171490,4,"03. ATE 300","01. ATE 500",1,48141,300],
+  ["202510",171490,4,"04. ATE 500","01. ATE 500",1,26728,449],
+  ["202510",171490,4,"05. 501 A 700","02. ACIMA DE 500",1,935,654],
+  ["202510",171490,4,"06. 701 A 900","02. ACIMA DE 500",1,674,873],
+  ["202510",171490,4,"07. 901 A 1000","02. ACIMA DE 500",1,197,1000],
+  ["202510",171490,4,"08. 1001 A 1300","02. ACIMA DE 500",1,125,1179],
+  ["202510",171490,4,"09. 1301 A 1500","02. ACIMA DE 500",1,61,1466],
+  ["202510",171490,4,"10. 1501 A 2000","02. ACIMA DE 500",1,65,1754],
+  ["202510",171490,4,"11. 2001 A 3000","02. ACIMA DE 500",1,95,2489],
+  ["202510",171490,4,"12. ACIMA DE 3000","02. ACIMA DE 500",1,123,5217],
+  ["202510",171490,5,"01. ATE 100","01. ATE 500",0,31213,100],
+  ["202510",171490,5,"02. ATE 200","01. ATE 500",0,5152,200],
+  ["202510",171490,5,"03. ATE 300","01. ATE 500",0,4848,300],
+  ["202510",171490,5,"04. ATE 500","01. ATE 500",0,5659,482],
+  ["202510",171490,5,"05. 501 A 700","02. ACIMA DE 500",0,287,659],
+  ["202510",171490,5,"06. 701 A 900","02. ACIMA DE 500",0,271,874],
+  ["202510",171490,5,"07. 901 A 1000","02. ACIMA DE 500",0,627,1000],
+  ["202510",171490,5,"08. 1001 A 1300","02. ACIMA DE 500",0,58,1185],
+  ["202510",171490,5,"09. 1301 A 1500","02. ACIMA DE 500",0,24,1450],
+  ["202510",171490,5,"10. 1501 A 2000","02. ACIMA DE 500",0,16,1785],
+  ["202510",171490,5,"11. 2001 A 3000","02. ACIMA DE 500",0,21,2517],
+  ["202510",171490,5,"12. ACIMA DE 3000","02. ACIMA DE 500",0,20,5650],
+  ["202510",171490,5,"01. ATE 100","01. ATE 500",1,22327,100],
+  ["202510",171490,5,"02. ATE 200","01. ATE 500",1,16153,200],
+  ["202510",171490,5,"03. ATE 300","01. ATE 500",1,44981,300],
+  ["202510",171490,5,"04. ATE 500","01. ATE 500",1,33613,462],
+  ["202510",171490,5,"05. 501 A 700","02. ACIMA DE 500",1,2828,653],
+  ["202510",171490,5,"06. 701 A 900","02. ACIMA DE 500",1,1997,874],
+  ["202510",171490,5,"07. 901 A 1000","02. ACIMA DE 500",1,472,1000],
+  ["202510",171490,5,"08. 1001 A 1300","02. ACIMA DE 500",1,372,1181],
+  ["202510",171490,5,"09. 1301 A 1500","02. ACIMA DE 500",1,152,1459],
+  ["202510",171490,5,"10. 1501 A 2000","02. ACIMA DE 500",1,142,1752],
+  ["202510",171490,5,"11. 2001 A 3000","02. ACIMA DE 500",1,161,2520],
+  ["202510",171490,5,"12. ACIMA DE 3000","02. ACIMA DE 500",1,226,5983],
+  ["202511",166914,0,"01. ATE 100","01. ATE 500",0,166914,100],
+  ["202511",166914,1,"01. ATE 100","01. ATE 500",0,51650,100],
+  ["202511",166914,1,"02. ATE 200","01. ATE 500",0,11429,200],
+  ["202511",166914,1,"03. ATE 300","01. ATE 500",0,458,300],
+  ["202511",166914,1,"04. ATE 500","01. ATE 500",0,491,500],
+  ["202511",166914,1,"05. 501 A 700","02. ACIMA DE 500",0,2,700],
+  ["202511",166914,1,"06. 701 A 900","02. ACIMA DE 500",0,1,850],
+  ["202511",166914,1,"07. 901 A 1000","02. ACIMA DE 500",0,3,987],
+  ["202511",166914,1,"08. 1001 A 1300","02. ACIMA DE 500",0,4,1250],
+  ["202511",166914,1,"09. 1301 A 1500","02. ACIMA DE 500",0,2,1400],
+  ["202511",166914,1,"10. 1501 A 2000","02. ACIMA DE 500",0,2,1800],
+  ["202511",166914,1,"11. 2001 A 3000","02. ACIMA DE 500",0,3,2833],
+  ["202511",166914,1,"12. ACIMA DE 3000","02. ACIMA DE 500",0,3,6567],
+  ["202511",166914,1,"01. ATE 100","01. ATE 500",1,40038,100],
+  ["202511",166914,1,"02. ATE 200","01. ATE 500",1,58312,200],
+  ["202511",166914,1,"03. ATE 300","01. ATE 500",1,3553,300],
+  ["202511",166914,1,"04. ATE 500","01. ATE 500",1,976,500],
+  ["202511",166914,1,"08. 1001 A 1300","02. ACIMA DE 500",1,2,1200],
+  ["202511",166914,1,"09. 1301 A 1500","02. ACIMA DE 500",1,1,1400],
+  ["202511",166914,1,"11. 2001 A 3000","02. ACIMA DE 500",1,2,2550],
+  ["202511",166914,1,"12. ACIMA DE 3000","02. ACIMA DE 500",1,1,5500],
+  ["202511",166914,2,"01. ATE 100","01. ATE 500",0,42244,100],
+  ["202511",166914,2,"02. ATE 200","01. ATE 500",0,7186,200],
+  ["202511",166914,2,"03. ATE 300","01. ATE 500",0,4053,300],
+  ["202511",166914,2,"04. ATE 500","01. ATE 500",0,1051,493],
+  ["202511",166914,2,"05. 501 A 700","02. ACIMA DE 500",0,4,700],
+  ["202511",166914,2,"06. 701 A 900","02. ACIMA DE 500",0,7,836],
+  ["202511",166914,2,"07. 901 A 1000","02. ACIMA DE 500",0,99,1000],
+  ["202511",166914,2,"08. 1001 A 1300","02. ACIMA DE 500",0,7,1243],
+  ["202511",166914,2,"09. 1301 A 1500","02. ACIMA DE 500",0,4,1425],
+  ["202511",166914,2,"10. 1501 A 2000","02. ACIMA DE 500",0,3,1833],
+  ["202511",166914,2,"11. 2001 A 3000","02. ACIMA DE 500",0,6,2650],
+  ["202511",166914,2,"12. ACIMA DE 3000","02. ACIMA DE 500",0,10,5020],
+  ["202511",166914,2,"01. ATE 100","01. ATE 500",1,33739,100],
+  ["202511",166914,2,"02. ATE 200","01. ATE 500",1,31540,200],
+  ["202511",166914,2,"03. ATE 300","01. ATE 500",1,42973,300],
+  ["202511",166914,2,"04. ATE 500","01. ATE 500",1,3785,485],
+  ["202511",166914,2,"05. 501 A 700","02. ACIMA DE 500",1,13,638],
+  ["202511",166914,2,"06. 701 A 900","02. ACIMA DE 500",1,13,846],
+  ["202511",166914,2,"07. 901 A 1000","02. ACIMA DE 500",1,38,1000],
+  ["202511",166914,2,"08. 1001 A 1300","02. ACIMA DE 500",1,24,1208],
+  ["202511",166914,2,"09. 1301 A 1500","02. ACIMA DE 500",1,14,1429],
+  ["202511",166914,2,"10. 1501 A 2000","02. ACIMA DE 500",1,34,1824],
+  ["202511",166914,2,"11. 2001 A 3000","02. ACIMA DE 500",1,42,2529],
+  ["202511",166914,2,"12. ACIMA DE 3000","02. ACIMA DE 500",1,55,4689],
+  ["202511",166914,3,"01. ATE 100","01. ATE 500",0,37279,100],
+  ["202511",166914,3,"02. ATE 200","01. ATE 500",0,6087,200],
+  ["202511",166914,3,"03. ATE 300","01. ATE 500",0,4518,300],
+  ["202511",166914,3,"04. ATE 500","01. ATE 500",0,2118,463],
+  ["202511",166914,3,"05. 501 A 700","02. ACIMA DE 500",0,6,683],
+  ["202511",166914,3,"06. 701 A 900","02. ACIMA DE 500",0,21,840],
+  ["202511",166914,3,"07. 901 A 1000","02. ACIMA DE 500",0,273,1000],
+  ["202511",166914,3,"08. 1001 A 1300","02. ACIMA DE 500",0,5,1240],
+  ["202511",166914,3,"09. 1301 A 1500","02. ACIMA DE 500",0,3,1433],
+  ["202511",166914,3,"10. 1501 A 2000","02. ACIMA DE 500",0,4,1800],
+  ["202511",166914,3,"11. 2001 A 3000","02. ACIMA DE 500",0,5,2660],
+  ["202511",166914,3,"12. ACIMA DE 3000","02. ACIMA DE 500",0,12,4908],
+  ["202511",166914,3,"01. ATE 100","01. ATE 500",1,29728,100],
+  ["202511",166914,3,"02. ATE 200","01. ATE 500",1,23467,200],
+  ["202511",166914,3,"03. ATE 300","01. ATE 500",1,46607,300],
+  ["202511",166914,3,"04. ATE 500","01. ATE 500",1,16459,436],
+  ["202511",166914,3,"05. 501 A 700","02. ACIMA DE 500",1,10,660],
+  ["202511",166914,3,"06. 701 A 900","02. ACIMA DE 500",1,10,860],
+  ["202511",166914,3,"07. 901 A 1000","02. ACIMA DE 500",1,104,1000],
+  ["202511",166914,3,"08. 1001 A 1300","02. ACIMA DE 500",1,25,1216],
+  ["202511",166914,3,"09. 1301 A 1500","02. ACIMA DE 500",1,14,1450],
+  ["202511",166914,3,"10. 1501 A 2000","02. ACIMA DE 500",1,45,1793],
+  ["202511",166914,3,"11. 2001 A 3000","02. ACIMA DE 500",1,55,2511],
+  ["202511",166914,3,"12. ACIMA DE 3000","02. ACIMA DE 500",1,90,5076],
+  ["202511",166914,4,"01. ATE 100","01. ATE 500",0,34647,100],
+  ["202511",166914,4,"02. ATE 200","01. ATE 500",0,5100,200],
+  ["202511",166914,4,"03. ATE 300","01. ATE 500",0,4062,300],
+  ["202511",166914,4,"04. ATE 500","01. ATE 500",0,3369,473],
+  ["202511",166914,4,"05. 501 A 700","02. ACIMA DE 500",0,127,663],
+  ["202511",166914,4,"06. 701 A 900","02. ACIMA DE 500",0,129,865],
+  ["202511",166914,4,"07. 901 A 1000","02. ACIMA DE 500",0,433,1000],
+  ["202511",166914,4,"08. 1001 A 1300","02. ACIMA DE 500",0,14,1193],
+  ["202511",166914,4,"09. 1301 A 1500","02. ACIMA DE 500",0,10,1450],
+  ["202511",166914,4,"10. 1501 A 2000","02. ACIMA DE 500",0,9,1756],
+  ["202511",166914,4,"11. 2001 A 3000","02. ACIMA DE 500",0,7,2557],
+  ["202511",166914,4,"12. ACIMA DE 3000","02. ACIMA DE 500",0,16,4213],
+  ["202511",166914,4,"01. ATE 100","01. ATE 500",1,25251,100],
+  ["202511",166914,4,"02. ATE 200","01. ATE 500",1,19636,200],
+  ["202511",166914,4,"03. ATE 300","01. ATE 500",1,45020,300],
+  ["202511",166914,4,"04. ATE 500","01. ATE 500",1,26623,452],
+  ["202511",166914,4,"05. 501 A 700","02. ACIMA DE 500",1,986,653],
+  ["202511",166914,4,"06. 701 A 900","02. ACIMA DE 500",1,678,872],
+  ["202511",166914,4,"07. 901 A 1000","02. ACIMA DE 500",1,276,1000],
+  ["202511",166914,4,"08. 1001 A 1300","02. ACIMA DE 500",1,137,1185],
+  ["202511",166914,4,"09. 1301 A 1500","02. ACIMA DE 500",1,62,1442],
+  ["202511",166914,4,"10. 1501 A 2000","02. ACIMA DE 500",1,73,1764],
+  ["202511",166914,4,"11. 2001 A 3000","02. ACIMA DE 500",1,111,2493],
+  ["202511",166914,4,"12. ACIMA DE 3000","02. ACIMA DE 500",1,174,5566],
+  ["202512",105879,0,"01. ATE 100","01. ATE 500",0,105879,100],
+  ["202512",105879,1,"01. ATE 100","01. ATE 500",0,34366,100],
+  ["202512",105879,1,"02. ATE 200","01. ATE 500",0,5851,200],
+  ["202512",105879,1,"03. ATE 300","01. ATE 500",0,228,300],
+  ["202512",105879,1,"04. ATE 500","01. ATE 500",0,623,500],
+  ["202512",105879,1,"05. 501 A 700","02. ACIMA DE 500",0,10,660],
+  ["202512",105879,1,"06. 701 A 900","02. ACIMA DE 500",0,14,856],
+  ["202512",105879,1,"07. 901 A 1000","02. ACIMA DE 500",0,1,1000],
+  ["202512",105879,1,"08. 1001 A 1300","02. ACIMA DE 500",0,9,1194],
+  ["202512",105879,1,"09. 1301 A 1500","02. ACIMA DE 500",0,4,1425],
+  ["202512",105879,1,"10. 1501 A 2000","02. ACIMA DE 500",0,19,1795],
+  ["202512",105879,1,"11. 2001 A 3000","02. ACIMA DE 500",0,19,2463],
+  ["202512",105879,1,"12. ACIMA DE 3000","02. ACIMA DE 500",0,15,3773],
+  ["202512",105879,1,"01. ATE 100","01. ATE 500",1,27336,100],
+  ["202512",105879,1,"02. ATE 200","01. ATE 500",1,32305,200],
+  ["202512",105879,1,"03. ATE 300","01. ATE 500",1,1959,300],
+  ["202512",105879,1,"04. ATE 500","01. ATE 500",1,2061,499],
+  ["202512",105879,1,"05. 501 A 700","02. ACIMA DE 500",1,45,660],
+  ["202512",105879,1,"06. 701 A 900","02. ACIMA DE 500",1,87,856],
+  ["202512",105879,1,"07. 901 A 1000","02. ACIMA DE 500",1,53,1000],
+  ["202512",105879,1,"08. 1001 A 1300","02. ACIMA DE 500",1,132,1188],
+  ["202512",105879,1,"09. 1301 A 1500","02. ACIMA DE 500",1,77,1449],
+  ["202512",105879,1,"10. 1501 A 2000","02. ACIMA DE 500",1,172,1798],
+  ["202512",105879,1,"11. 2001 A 3000","02. ACIMA DE 500",1,182,2486],
+  ["202512",105879,1,"12. ACIMA DE 3000","02. ACIMA DE 500",1,169,4759],
+  ["202512",105879,2,"01. ATE 100","01. ATE 500",0,28803,100],
+  ["202512",105879,2,"02. ATE 200","01. ATE 500",0,4458,200],
+  ["202512",105879,2,"03. ATE 300","01. ATE 500",0,2264,300],
+  ["202512",105879,2,"04. ATE 500","01. ATE 500",0,919,497],
+  ["202512",105879,2,"05. 501 A 700","02. ACIMA DE 500",0,8,663],
+  ["202512",105879,2,"06. 701 A 900","02. ACIMA DE 500",0,18,843],
+  ["202512",105879,2,"07. 901 A 1000","02. ACIMA DE 500",0,70,1000],
+  ["202512",105879,2,"08. 1001 A 1300","02. ACIMA DE 500",0,17,1215],
+  ["202512",105879,2,"09. 1301 A 1500","02. ACIMA DE 500",0,7,1457],
+  ["202512",105879,2,"10. 1501 A 2000","02. ACIMA DE 500",0,20,1795],
+  ["202512",105879,2,"11. 2001 A 3000","02. ACIMA DE 500",0,30,2540],
+  ["202512",105879,2,"12. ACIMA DE 3000","02. ACIMA DE 500",0,26,4284],
+  ["202512",105879,2,"01. ATE 100","01. ATE 500",1,21189,100],
+  ["202512",105879,2,"02. ATE 200","01. ATE 500",1,19711,200],
+  ["202512",105879,2,"03. ATE 300","01. ATE 500",1,23009,300],
+  ["202512",105879,2,"04. ATE 500","01. ATE 500",1,3652,489],
+  ["202512",105879,2,"05. 501 A 700","02. ACIMA DE 500",1,65,660],
+  ["202512",105879,2,"06. 701 A 900","02. ACIMA DE 500",1,138,852],
+  ["202512",105879,2,"07. 901 A 1000","02. ACIMA DE 500",1,90,1000],
+  ["202512",105879,2,"08. 1001 A 1300","02. ACIMA DE 500",1,198,1188],
+  ["202512",105879,2,"09. 1301 A 1500","02. ACIMA DE 500",1,143,1451],
+  ["202512",105879,2,"10. 1501 A 2000","02. ACIMA DE 500",1,270,1789],
+  ["202512",105879,2,"11. 2001 A 3000","02. ACIMA DE 500",1,327,2482],
+  ["202512",105879,2,"12. ACIMA DE 3000","02. ACIMA DE 500",1,324,4880],
+  ["202512",105879,3,"01. ATE 100","01. ATE 500",0,25172,100],
+  ["202512",105879,3,"02. ATE 200","01. ATE 500",0,3502,200],
+  ["202512",105879,3,"03. ATE 300","01. ATE 500",0,2484,300],
+  ["202512",105879,3,"04. ATE 500","01. ATE 500",0,1478,471],
+  ["202512",105879,3,"05. 501 A 700","02. ACIMA DE 500",0,15,653],
+  ["202512",105879,3,"06. 701 A 900","02. ACIMA DE 500",0,25,823],
+  ["202512",105879,3,"07. 901 A 1000","02. ACIMA DE 500",0,223,1000],
+  ["202512",105879,3,"08. 1001 A 1300","02. ACIMA DE 500",0,9,1150],
+  ["202512",105879,3,"09. 1301 A 1500","02. ACIMA DE 500",0,9,1456],
+  ["202512",105879,3,"10. 1501 A 2000","02. ACIMA DE 500",0,15,1760],
+  ["202512",105879,3,"11. 2001 A 3000","02. ACIMA DE 500",0,29,2576],
+  ["202512",105879,3,"12. ACIMA DE 3000","02. ACIMA DE 500",0,27,5385],
+  ["202512",105879,3,"01. ATE 100","01. ATE 500",1,18626,100],
+  ["202512",105879,3,"02. ATE 200","01. ATE 500",1,14442,200],
+  ["202512",105879,3,"03. ATE 300","01. ATE 500",1,26731,300],
+  ["202512",105879,3,"04. ATE 500","01. ATE 500",1,10807,448],
+  ["202512",105879,3,"05. 501 A 700","02. ACIMA DE 500",1,67,657],
+  ["202512",105879,3,"06. 701 A 900","02. ACIMA DE 500",1,135,847],
+  ["202512",105879,3,"07. 901 A 1000","02. ACIMA DE 500",1,171,1000],
+  ["202512",105879,3,"08. 1001 A 1300","02. ACIMA DE 500",1,243,1193],
+  ["202512",105879,3,"09. 1301 A 1500","02. ACIMA DE 500",1,153,1443],
+  ["202512",105879,3,"10. 1501 A 2000","02. ACIMA DE 500",1,312,1786],
+  ["202512",105879,3,"11. 2001 A 3000","02. ACIMA DE 500",1,435,2513],
+  ["202512",105879,3,"12. ACIMA DE 3000","02. ACIMA DE 500",1,668,5849],
+  ["202601",150513,0,"01. ATE 100","01. ATE 500",0,150513,100],
+  ["202601",150513,1,"01. ATE 100","01. ATE 500",0,46300,100],
+  ["202601",150513,1,"02. ATE 200","01. ATE 500",0,8774,200],
+  ["202601",150513,1,"03. ATE 300","01. ATE 500",0,96,300],
+  ["202601",150513,1,"04. ATE 500","01. ATE 500",0,503,500],
+  ["202601",150513,1,"05. 501 A 700","02. ACIMA DE 500",0,5,660],
+  ["202601",150513,1,"06. 701 A 900","02. ACIMA DE 500",0,8,831],
+  ["202601",150513,1,"07. 901 A 1000","02. ACIMA DE 500",0,4,1000],
+  ["202601",150513,1,"08. 1001 A 1300","02. ACIMA DE 500",0,9,1211],
+  ["202601",150513,1,"09. 1301 A 1500","02. ACIMA DE 500",0,6,1423],
+  ["202601",150513,1,"10. 1501 A 2000","02. ACIMA DE 500",0,8,1788],
+  ["202601",150513,1,"11. 2001 A 3000","02. ACIMA DE 500",0,18,2378],
+  ["202601",150513,1,"12. ACIMA DE 3000","02. ACIMA DE 500",0,12,4875],
+  ["202601",150513,1,"01. ATE 100","01. ATE 500",1,40937,100],
+  ["202601",150513,1,"02. ATE 200","01. ATE 500",1,51585,200],
+  ["202601",150513,1,"03. ATE 300","01. ATE 500",1,989,300],
+  ["202601",150513,1,"04. ATE 500","01. ATE 500",1,1014,500],
+  ["202601",150513,1,"05. 501 A 700","02. ACIMA DE 500",1,14,643],
+  ["202601",150513,1,"06. 701 A 900","02. ACIMA DE 500",1,28,861],
+  ["202601",150513,1,"07. 901 A 1000","02. ACIMA DE 500",1,16,1000],
+  ["202601",150513,1,"08. 1001 A 1300","02. ACIMA DE 500",1,35,1186],
+  ["202601",150513,1,"09. 1301 A 1500","02. ACIMA DE 500",1,20,1435],
+  ["202601",150513,1,"10. 1501 A 2000","02. ACIMA DE 500",1,57,1763],
+  ["202601",150513,1,"11. 2001 A 3000","02. ACIMA DE 500",1,66,2527],
+  ["202601",150513,1,"12. ACIMA DE 3000","02. ACIMA DE 500",1,61,5310],
+  ["202601",150513,2,"01. ATE 100","01. ATE 500",0,37399,100],
+  ["202601",150513,2,"02. ATE 200","01. ATE 500",0,5944,200],
+  ["202601",150513,2,"03. ATE 300","01. ATE 500",0,3075,300],
+  ["202601",150513,2,"04. ATE 500","01. ATE 500",0,830,499],
+  ["202601",150513,2,"05. 501 A 700","02. ACIMA DE 500",0,5,680],
+  ["202601",150513,2,"06. 701 A 900","02. ACIMA DE 500",0,15,823],
+  ["202601",150513,2,"07. 901 A 1000","02. ACIMA DE 500",0,67,1000],
+  ["202601",150513,2,"08. 1001 A 1300","02. ACIMA DE 500",0,11,1218],
+  ["202601",150513,2,"09. 1301 A 1500","02. ACIMA DE 500",0,10,1434],
+  ["202601",150513,2,"10. 1501 A 2000","02. ACIMA DE 500",0,18,1800],
+  ["202601",150513,2,"11. 2001 A 3000","02. ACIMA DE 500",0,13,2454],
+  ["202601",150513,2,"12. ACIMA DE 3000","02. ACIMA DE 500",0,26,5450],
+  ["202601",150513,2,"01. ATE 100","01. ATE 500",1,31799,100],
+  ["202601",150513,2,"02. ATE 200","01. ATE 500",1,30043,200],
+  ["202601",150513,2,"03. ATE 300","01. ATE 500",1,37841,300],
+  ["202601",150513,2,"04. ATE 500","01. ATE 500",1,2727,494],
+  ["202601",150513,2,"05. 501 A 700","02. ACIMA DE 500",1,15,660],
+  ["202601",150513,2,"06. 701 A 900","02. ACIMA DE 500",1,31,861],
+  ["202601",150513,2,"07. 901 A 1000","02. ACIMA DE 500",1,38,1000],
+  ["202601",150513,2,"08. 1001 A 1300","02. ACIMA DE 500",1,63,1202],
+  ["202601",150513,2,"09. 1301 A 1500","02. ACIMA DE 500",1,47,1447],
+  ["202601",150513,2,"10. 1501 A 2000","02. ACIMA DE 500",1,96,1779],
+  ["202601",150513,2,"11. 2001 A 3000","02. ACIMA DE 500",1,187,2554],
+  ["202601",150513,2,"12. ACIMA DE 3000","02. ACIMA DE 500",1,265,5962],
+  ["202602",118797,0,"01. ATE 100","01. ATE 500",0,118797,100],
+  ["202602",118797,1,"01. ATE 100","01. ATE 500",0,41789,100],
+  ["202602",118797,1,"02. ATE 200","01. ATE 500",0,5964,200],
+  ["202602",118797,1,"03. ATE 300","01. ATE 500",0,79,300],
+  ["202602",118797,1,"04. ATE 500","01. ATE 500",0,477,500],
+  ["202602",118797,1,"05. 501 A 700","02. ACIMA DE 500",0,3,700],
+  ["202602",118797,1,"06. 701 A 900","02. ACIMA DE 500",0,6,808],
+  ["202602",118797,1,"07. 901 A 1000","02. ACIMA DE 500",0,2,1000],
+  ["202602",118797,1,"08. 1001 A 1300","02. ACIMA DE 500",0,8,1213],
+  ["202602",118797,1,"09. 1301 A 1500","02. ACIMA DE 500",0,3,1467],
+  ["202602",118797,1,"10. 1501 A 2000","02. ACIMA DE 500",0,9,1822],
+  ["202602",118797,1,"11. 2001 A 3000","02. ACIMA DE 500",0,5,2420],
+  ["202602",118797,1,"12. ACIMA DE 3000","02. ACIMA DE 500",0,6,9350],
+  ["202602",118797,1,"01. ATE 100","01. ATE 500",1,31134,100],
+  ["202602",118797,1,"02. ATE 200","01. ATE 500",1,37301,200],
+  ["202602",118797,1,"03. ATE 300","01. ATE 500",1,1127,300],
+  ["202602",118797,1,"04. ATE 500","01. ATE 500",1,815,500],
+  ["202602",118797,1,"05. 501 A 700","02. ACIMA DE 500",1,3,700],
+  ["202602",118797,1,"06. 701 A 900","02. ACIMA DE 500",1,2,850],
+  ["202602",118797,1,"07. 901 A 1000","02. ACIMA DE 500",1,3,1000],
+  ["202602",118797,1,"08. 1001 A 1300","02. ACIMA DE 500",1,11,1209],
+  ["202602",118797,1,"09. 1301 A 1500","02. ACIMA DE 500",1,6,1433],
+  ["202602",118797,1,"10. 1501 A 2000","02. ACIMA DE 500",1,17,1806],
+  ["202602",118797,1,"11. 2001 A 3000","02. ACIMA DE 500",1,21,2643],
+  ["202602",118797,1,"12. ACIMA DE 3000","02. ACIMA DE 500",1,54,6674],
+  ["202603",145239,0,"01. ATE 100","01. ATE 500",0,145239,100],
+  ["202604",17126,0,"01. ATE 100","01. ATE 500",0,17126,100]
+];
+
+const SAFRA_LABELS = {"202507":"jul/25","202508":"ago/25","202509":"set/25","202510":"out/25","202511":"nov/25","202601":"jan/26","202602":"fev/26","202603":"mar/26","202604":"abr/26"};
+const SAFRA_COLORS = {"202507":"#1a1a2e","202508":"#f4a261","202509":"#2a9d8f","202510":"#457b9d","202511":"#e76f51","202601":"#6a0572","202602":"#c77dff","202603":"#0077b6","202604":"#00b4d8"};
+// Cores alinhadas à jornada de graduação Micro TC
+const FAIXA_COLORS = {
+  "01. ATE 100":"#e0e0e0",      // limite inicial — cinza
+  "02. ATE 200":"#a5d8ff",      // 1ª graduação — azul claro
+  "03. ATE 300":"#74c0fc",      // 2ª graduação — azul médio
+  "04. ATE 500":"#339af0",      // Full TC (≤500) — azul forte
+  "05. 501 A 700":"#ffe066",    // acima de Full TC
+  "06. 701 A 900":"#ffd43b",
+  "07. 901 A 1000":"#ffa94d",
+  "08. 1001 A 1300":"#ff922b",
+  "09. 1301 A 1500":"#f76707",
+  "10. 1501 A 2000":"#e67700",
+  "11. 2001 A 3000":"#2f9e44",
+  "12. ACIMA DE 3000":"#1971c2"
+};
+
+let charts = {};
+
+function fmt(n){ return n ? n.toLocaleString('pt-BR') : '-'; }
+
+// KPIs
+function buildKPIs(){
+  const safras = [...new Set(RAW.map(r=>r[0]))];
+  const totalEmitidos = safras.reduce((s,sf)=>{
+    const r = RAW.find(x=>x[0]===sf); return s+(r?r[1]:0);
+  },0);
+  const lastMob = RAW.filter(r=>r[2]===8 && r[3]==="01. ATE 500");
+  const totalAtivos8 = lastMob.reduce((s,r)=>s+r[6],0);
+  const limMedGeral = Math.round(RAW.filter(r=>r[0]==="202507"&&r[2]===8).reduce((s,r)=>s+r[6]*r[7],0)/
+    RAW.filter(r=>r[0]==="202507"&&r[2]===8).reduce((s,r)=>s+r[6],0));
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="label">Total Emitidos (jul-nov/25)</div><div class="value">${fmt(totalEmitidos)}</div><div class="sub">5 safras</div></div>
+    <div class="kpi"><div class="label">Emitidos jul/25</div><div class="value">139.630</div><div class="sub">Safra mais madura</div></div>
+    <div class="kpi"><div class="label">Limite Médio Geral — MOB 8 (jul/25)</div><div class="value">R$ ${fmt(limMedGeral)}</div><div class="sub">Todos os usuários ativos</div></div>
+    <div class="kpi"><div class="label">% Graduados >500 — MOB 8 (jul/25)</div><div class="value">${(RAW.filter(r=>r[0]==="202507"&&r[2]===8&&r[4]==="02. ACIMA DE 500").reduce((s,r)=>s+r[6],0)/RAW.filter(r=>r[0]==="202507"&&r[2]===8).reduce((s,r)=>s+r[6],0)*100).toFixed(1)}%</div><div class="sub">Usuários com limite >R$500</div></div>
+  `;
+}
+
+const NO_GRID = { grid:{ display:false } };
+
+// r[5]=FLG_LIMITEMEDIO_R_MICRO (0|1), r[6]=QNT_ATIVOS, r[7]=LIMITE_MEDIO
+function filterRaw(r, flg){
+  return flg==="all" || String(r[5])===String(flg);
+}
+
+// Chart 1
+function buildChartLimMob(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
+  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const mobs = mobFilter==="all" ? [0,1,2,3,4,5,6,7,8] : [parseInt(mobFilter)];
+  const datasets = safras.map(sf=>{
+    const data = mobs.map(mob=>{
+      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && (faixaFilter==="all"||r[3]===faixaFilter) && filterRaw(r,flgFilter));
+      const totalLim = rows.reduce((s,r)=>s+r[6]*r[7],0);
+      const totalUsr = rows.reduce((s,r)=>s+r[6],0);
+      return totalUsr>=Math.max(1,minVol) ? Math.round(totalLim/totalUsr) : null;
+    });
+    return { label:SAFRA_LABELS[sf], data, borderColor:SAFRA_COLORS[sf], backgroundColor:SAFRA_COLORS[sf]+'33', fill:false, tension:.3, pointRadius:4 };
+  });
+  if(charts.limMob) charts.limMob.destroy();
+  charts.limMob = new Chart(document.getElementById('chartLimMob'),{
+    type:'line', data:{labels:mobs, datasets},
+    options:{
+      scales:{
+        x:{...NO_GRID, title:{display:true,text:'MOB'}},
+        y:{...NO_GRID, title:{display:true,text:'Limite Médio (R$)'},ticks:{callback:v=>'R$ '+v.toLocaleString('pt-BR')}}
+      },
+      plugins:{
+        legend:{position:'top'},
+        datalabels:{
+          display: ctx => { const d=ctx.dataset.data; const vi=d.map((v,i)=>v!=null?i:-1).filter(i=>i>=0); return ctx.dataIndex===vi[vi.length-1]; },
+          align:'right', anchor:'end', clamp:false, clip:false, offset:6,
+          color:ctx=>ctx.dataset.borderColor, font:{weight:'700',size:11},
+          formatter:(v,ctx)=>v?ctx.dataset.label+'\nR$ '+Math.round(v).toLocaleString('pt-BR'):'',
+          textAlign:'left'
+        }
+      },
+      layout:{padding:{right:90}}, responsive:true, maintainAspectRatio:true
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+// Chart 2
+function buildChartFaixaMob(safraFilter, mobFilter, flgFilter, minVol=0){
+  const sf = safraFilter==="all" ? "202507" : safraFilter;
+  const allMobs = [1,2,3,4,5,6,7,8];
+  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+  const faixas = [...new Set(RAW.filter(r=>r[0]===sf&&filterRaw(r,flgFilter)).map(r=>r[3]))].sort();
+  const datasets = faixas.map(fx=>{
+    const data = mobs.map(mob=>{
+      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && filterRaw(r,flgFilter));
+      const total = rows.reduce((s,r)=>s+r[6],0);
+      const fxVol = rows.filter(r=>r[3]===fx).reduce((s,r)=>s+r[6],0);
+      if(fxVol < minVol) return 0;
+      return total>0 && fxVol>0 ? +((fxVol/total)*100).toFixed(1) : 0;
+    });
+    return { label:fx, data, backgroundColor:FAIXA_COLORS[fx]||'#ccc', stack:'s' };
+  });
+  if(charts.faixaMob) charts.faixaMob.destroy();
+  charts.faixaMob = new Chart(document.getElementById('chartFaixaMob'),{
+    type:'bar', data:{labels:mobs, datasets},
+    options:{
+      scales:{
+        x:{...NO_GRID, stacked:true, title:{display:true,text:'MOB'}},
+        y:{...NO_GRID, stacked:true, max:100, title:{display:true,text:'% Usuários'}, ticks:{callback:v=>v+'%'}}
+      },
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          display:ctx=>ctx.dataset.data[ctx.dataIndex]>=3,
+          anchor:'center', align:'center',
+          color:'#1a1a2e', font:{weight:'700',size:10},
+          formatter:v=>v>0?v.toFixed(1)+'%':''
+        }
+      },
+      responsive:true, maintainAspectRatio:true
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+// Chart 3
+function buildChartEmissao(){
+  const safras = Object.keys(SAFRA_LABELS);
+  const emitidos = safras.map(sf=>{ const r=RAW.find(x=>x[0]===sf); return r?r[1]:0; });
+  if(charts.emissao) charts.emissao.destroy();
+  charts.emissao = new Chart(document.getElementById('chartEmissao'),{
+    type:'bar', data:{labels:safras.map(s=>SAFRA_LABELS[s]), datasets:[{label:'Emitidos',data:emitidos,backgroundColor:'#FFE600',borderColor:'#1a1a2e',borderWidth:1}]},
+    options:{
+      plugins:{
+        legend:{display:false},
+        datalabels:{anchor:'end',align:'top',color:'#1a1a2e',font:{weight:'700',size:12},formatter:v=>v.toLocaleString('pt-BR')}
+      },
+      scales:{
+        x:{...NO_GRID},
+        y:{...NO_GRID, ticks:{callback:v=>v.toLocaleString('pt-BR')}}
+      },
+      responsive:true, maintainAspectRatio:true
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+// Chart 4
+function buildChartAcima500(safraFilter, mobFilter, flgFilter, minVol=0){
+  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const allMobs = [1,2,3,4,5,6,7,8];
+  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+  const datasets = safras.map(sf=>{
+    const data = mobs.map(mob=>{
+      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && r[4]==="02. ACIMA DE 500" && filterRaw(r,flgFilter));
+      const totalLim = rows.reduce((s,r)=>s+r[6]*r[7],0);
+      const totalUsr = rows.reduce((s,r)=>s+r[6],0);
+      return totalUsr>=Math.max(10,minVol) ? Math.round(totalLim/totalUsr) : null;
+    });
+    return { label:SAFRA_LABELS[sf], data, borderColor:SAFRA_COLORS[sf], backgroundColor:SAFRA_COLORS[sf]+'33', fill:false, tension:.3, pointRadius:4 };
+  });
+  if(charts.acima500) charts.acima500.destroy();
+  charts.acima500 = new Chart(document.getElementById('chartAcima500'),{
+    type:'line', data:{labels:mobs, datasets},
+    options:{
+      scales:{
+        x:{...NO_GRID, title:{display:true,text:'MOB'}},
+        y:{...NO_GRID, title:{display:true,text:'Limite Médio (R$)'},ticks:{callback:v=>'R$ '+v.toLocaleString('pt-BR')}}
+      },
+      plugins:{legend:{position:'top'}},
+      responsive:true, maintainAspectRatio:true
+    }
+  });
+}
+
+// Configuração visual das faixas
+const FAIXA_META = {
+  '01. ATE 100':       { label:'≤ R$100',     sub:'inicial',   rowBg:'#f5f8ff', border:'#b0c4de', dot:'#90a8c8' },
+  '02. ATE 200':       { label:'≤ R$200',     sub:'grad. 1',   rowBg:'#eaf3ff', border:'#74a8e8', dot:'#4a90d9' },
+  '03. ATE 300':       { label:'≤ R$300',     sub:'grad. 2',   rowBg:'#ddeeff', border:'#4a90d9', dot:'#1e6fbf' },
+  '04. ATE 500':       { label:'≤ R$500',     sub:'Full TC',   rowBg:'#cce4ff', border:'#1e6fbf', dot:'#0a4fa0' },
+  '05. 501 A 700':     { label:'R$501–700',   sub:'upsell',    rowBg:'#fffef5', border:'#e0c040', dot:'#b89a00' },
+  '06. 701 A 900':     { label:'R$701–900',   sub:'',          rowBg:'#fffdf0', border:'#d4a820', dot:'#a07800' },
+  '07. 901 A 1000':    { label:'R$901–1k',    sub:'',          rowBg:'#fff9e8', border:'#c89010', dot:'#906000' },
+  '08. 1001 A 1300':   { label:'R$1k–1,3k',  sub:'',          rowBg:'#fff6e0', border:'#c07808', dot:'#804800' },
+  '09. 1301 A 1500':   { label:'R$1,3k–1,5k',sub:'',          rowBg:'#fff3d8', border:'#b86000', dot:'#783000' },
+  '10. 1501 A 2000':   { label:'R$1,5k–2k',  sub:'',          rowBg:'#fff0d0', border:'#a04820', dot:'#702000' },
+  '11. 2001 A 3000':   { label:'R$2k–3k',    sub:'',          rowBg:'#f0fff0', border:'#5a9e5a', dot:'#2a7a2a' },
+  '12. ACIMA DE 3000': { label:'> R$3k',      sub:'',          rowBg:'#f0f5ff', border:'#4a6abf', dot:'#1a3a9a' },
+};
+
+// ── Tabela resumo 2 faixas (nova — primeira tabela) ──────────────────────────
+function buildTableFx2(safraFilter, mobFilter, flgFilter, minVol=0){
+  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const allMobs = [0,1,2,3,4,5,6,7,8];
+  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+
+  const rows2 = [
+    { key:'total', label:'Total Geral',    bg:'#1a1a2e', fg:'#ffe600', border:'#ffe600', fx2:'all'         },
+    { key:'ate500', label:'≤ R$500',        bg:'#e8f3ff', fg:'#1e6fbf', border:'#1e6fbf', fx2:'01. ATE 500' },
+    { key:'acima', label:'> R$500',         bg:'#fff8e8', fg:'#c07808', border:'#c07808', fx2:'02. ACIMA DE 500' },
+  ];
+
+  // Helper: calcula lm e vol para um subgrupo
+  function calc(sf, mob, fx2){
+    const r = RAW.filter(x=>x[0]===sf&&x[2]===mob&&(fx2==='all'||x[4]===fx2)&&filterRaw(x,flgFilter));
+    const vol = r.reduce((s,x)=>s+x[6],0);
+    const lm  = vol>0 ? Math.round(r.reduce((s,x)=>s+x[6]*x[7],0)/vol) : null;
+    return {vol,lm};
+  }
+
+  // Header
+  let html = '<tr><th rowspan="2" style="min-width:65px">Safra</th><th rowspan="2">Emitidos</th><th rowspan="2" style="min-width:110px;text-align:left;padding-left:10px">Faixa</th>';
+  mobs.forEach(m=>html+=`<th style="text-align:center;min-width:105px">MOB ${m}</th>`);
+  html += '</tr><tr>';
+  mobs.forEach(()=>html+=`<th style="font-size:9px;font-weight:400;color:#999;padding:2px 4px;text-align:center;background:#2a2a3e">Lim.Méd · Usuários · Δ%</th>`);
+  html += '</tr>';
+
+  safras.forEach(sf=>{
+    const emitidos = RAW.find(r=>r[0]===sf)?.[1]||0;
+    const base = calc(sf,0,'all').lm; // MOB 0 total como base
+
+    rows2.forEach((row,ri)=>{
+      const isFirst = ri===0;
+      html += `<tr style="background:${row.bg};${isFirst?'border-top:3px solid #1a1a2e;':''}">`;
+      if(isFirst) html += `<td rowspan="3" style="font-weight:700;vertical-align:middle;text-align:center;background:#f8f8f8;border-top:3px solid #1a1a2e;font-size:13px">${SAFRA_LABELS[sf]}</td><td rowspan="3" style="vertical-align:middle;text-align:center;background:#f8f8f8;font-size:12px;color:#555;border-top:3px solid #1a1a2e">${fmt(emitidos)}</td>`;
+      html += `<td style="padding:5px 5px 5px 10px;border-left:4px solid ${row.border};font-weight:700;font-size:12px;color:${row.key==='total'?'#ffe600':row.fg}">${row.label}</td>`;
+
+      mobs.forEach(mob=>{
+        const {vol,lm} = calc(sf, mob, row.fx2);
+        const belowMin = vol>0 && vol<minVol;
+        const pct = (lm&&base&&mob>0) ? ((lm-base)/base*100) : null;
+        const pctStr = pct!==null ? `<span style="font-size:10px;font-weight:600;color:${pct>=0?'#2e7d32':'#c62828'}">${pct>=0?'+':''}${pct.toFixed(0)}%</span>` : (mob===0?`<span style="font-size:10px;color:#888">base</span>`:'');
+
+        let content;
+        if(belowMin) content = `<span style="color:#888;font-size:11px">—</span>`;
+        else if(lm){
+          const lmColor = row.key==='total'?'#ffe600':row.fg;
+          content = `<div style="font-weight:700;font-size:13px;color:${lmColor}">R$\u00a0${fmt(lm)}</div><div style="font-size:10px;color:${row.key==='total'?'#aaa':'#666'};margin-top:1px">${fmt(vol)} usuários</div><div style="margin-top:1px">${pctStr}</div>`;
+        } else content = `<span style="color:#555">—</span>`;
+
+        html += `<td style="padding:5px 8px;vertical-align:top;border-left:1px solid ${row.key==='total'?'#333':'#e0e8f4'}">${content}</td>`;
+      });
+      html += '</tr>';
+    });
+  });
+  document.getElementById('tblFx2').innerHTML = html;
+}
+
+// ── Tabela detalhe por faixa ──────────────────────────────────────────────────
+function buildTable(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
+  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const allMobs = [0,1,2,3,4,5,6,7,8];
+  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+  const MICRO_FAIXAS = ['01. ATE 100','02. ATE 200','03. ATE 300','04. ATE 500'];
+
+  let html = '<tr><th rowspan="2" style="min-width:60px">Safra</th><th rowspan="2" style="min-width:55px">Emitidos</th><th rowspan="2" style="min-width:130px;text-align:left;padding-left:12px">Faixa de Limite</th>';
+  mobs.forEach(m=>html+=`<th style="text-align:center;min-width:110px">MOB ${m}</th>`);
+  html += '</tr><tr>';
+  mobs.forEach(()=>html+=`<th style="font-size:9px;font-weight:400;color:#999;padding:2px 4px;text-align:center;background:#2a2a3e">Limite · Usuários · Share</th>`);
+  html += '</tr>';
+
+  safras.forEach(sf=>{
+    const emitidos = RAW.find(r=>r[0]===sf)?.[1]||0;
+    const faixas = faixaFilter==="all"
+      ? [...new Set(RAW.filter(r=>r[0]===sf&&filterRaw(r,flgFilter)).map(r=>r[3]))].sort()
+      : [faixaFilter];
+
+    if(!faixas.length) return; // safra sem dados — pula
+
+    const hasSeparator = faixas.some(f=>MICRO_FAIXAS.includes(f)) && faixas.some(f=>!MICRO_FAIXAS.includes(f));
+    const rowspan = faixas.length + (hasSeparator?1:0) + 1;
+
+    faixas.forEach((fx, i)=>{
+      // Separador Micro TC → Full TC+
+      if(hasSeparator && i>0 && MICRO_FAIXAS.includes(faixas[i-1]) && !MICRO_FAIXAS.includes(fx)){
+        html += `<tr style="background:#ebebeb"><td colspan="${mobs.length+1}" style="font-size:10px;font-weight:700;color:#666;padding:3px 12px;letter-spacing:.07em;text-transform:uppercase;border-left:4px solid #bbb">▲ Acima de R$500 — Full TC+</td></tr>`;
+      }
+
+      const meta = FAIXA_META[fx] || {label:fx, sub:'', rowBg:'#fff', border:'#ddd'};
+      const borderTop = i===0 ? 'border-top:3px solid #1a1a2e;' : '';
+
+      html += `<tr style="background:${meta.rowBg}">`;
+      // Safra + Emitidos apenas na primeira linha (rowspan correto)
+      if(i===0){
+        html += `<td rowspan="${rowspan}" style="font-weight:700;background:#f8f8f8;${borderTop}vertical-align:middle;text-align:center;font-size:13px">${SAFRA_LABELS[sf]}</td>`;
+        html += `<td rowspan="${rowspan}" style="background:#f8f8f8;${borderTop}vertical-align:middle;text-align:center;font-size:12px;color:#555">${fmt(emitidos)}</td>`;
+      }
+
+      html += `<td style="text-align:left;padding:5px 5px 5px 12px;border-left:4px solid ${meta.border};${borderTop}">
+        <span style="font-weight:700;font-size:12px;color:#1a1a2e">${meta.label}</span>
+        ${meta.sub?`<span style="font-size:10px;color:#888;margin-left:4px">${meta.sub}</span>`:''}
+      </td>`;
+
+      mobs.forEach(mob=>{
+        const matchRows = RAW.filter(r=>r[0]===sf&&r[2]===mob&&r[3]===fx&&filterRaw(r,flgFilter));
+        const vol = matchRows.reduce((s,r)=>s+r[6],0);
+        const lm  = vol>0 ? Math.round(matchRows.reduce((s,r)=>s+r[6]*r[7],0)/vol) : null;
+        const belowMin = vol>0 && vol<minVol;
+        const totalMob = RAW.filter(r=>r[0]===sf&&r[2]===mob&&filterRaw(r,flgFilter)).reduce((s,r)=>s+r[6],0);
+        const sharePct = (vol>0&&totalMob>0) ? (vol/totalMob)*100 : 0;
+        const shareColor = sharePct>=30?'#1565c0':sharePct>=10?'#2e7d32':sharePct>=3?'#e65100':'#9e9e9e';
+
+        let content;
+        if(belowMin) content = `<span style="color:#ccc;font-size:11px" title="abaixo do mínimo (${fmt(vol)})">—</span>`;
+        else if(lm)  content = `<div style="font-weight:700;font-size:13px;color:#1a1a2e">R$\u00a0${fmt(lm)}</div><div style="font-size:10px;color:#666;margin-top:1px">${fmt(vol)} usuários</div><div style="font-size:11px;font-weight:600;color:${shareColor};margin-top:1px">${sharePct>0?sharePct.toFixed(1)+'%':''}</div>`;
+        else         content = `<span style="color:#ddd">—</span>`;
+
+        html += `<td style="padding:5px 8px;vertical-align:top;border-left:1px solid #eee;${borderTop}">${content}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    // Linha TOTAL SAFRA
+    html += `<tr style="background:#1a1a2e;border-bottom:3px solid #1a1a2e">`;
+    html += `<td style="font-size:11px;font-weight:700;color:#ffe600;padding:5px 5px 5px 12px;letter-spacing:.06em;border-left:4px solid #ffe600">TOTAL SAFRA</td>`;
+    mobs.forEach(mob=>{
+      const allRows = RAW.filter(r=>r[0]===sf&&r[2]===mob&&filterRaw(r,flgFilter));
+      const vol = allRows.reduce((s,r)=>s+r[6],0);
+      const lm  = vol>0 ? Math.round(allRows.reduce((s,r)=>s+r[6]*r[7],0)/vol) : null;
+      const belowMin = vol>0 && vol<minVol;
+      const content = belowMin ? `<span style="color:#555">—</span>`
+        : lm ? `<div style="font-weight:800;font-size:14px;color:#ffe600">R$\u00a0${fmt(lm)}</div><div style="font-size:10px;color:#aaa;margin-top:1px">${fmt(vol)} usuários</div>`
+             : `<span style="color:#555">—</span>`;
+      html += `<td style="padding:5px 8px;vertical-align:top;border-left:1px solid #333">${content}</td>`;
+    });
+    html += '</tr>';
+  });
+  document.getElementById('tbl').innerHTML = html;
+}
+
+// Resume table: safra × MOB com limite médio e % vs MOB 0
+function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0){
+  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const mobs = [0,1,2,3,4,5,6,7,8];
+  const safraColors = Object.values(SAFRA_COLORS);
+
+  let html = '<tr><th class="safra-col">Safra</th>';
+  mobs.forEach(m => html += `<th>MOB ${m}</th>`);
+  html += '</tr>';
+
+  safras.forEach((sf, si) => {
+    const color = Object.values(SAFRA_COLORS)[si] || '#1a1a2e';
+    // Calc limit average per MOB (all faixas or filtered)
+    const limByMob = mobs.map(mob => {
+      const rows = RAW.filter(r => r[0]===sf && r[2]===mob
+        && (faixaFilter==="all"||r[3]===faixaFilter)
+        && filterRaw(r, flgFilter));
+      const totalLim = rows.reduce((s,r)=>s+r[6]*r[7],0);
+      const totalUsr = rows.reduce((s,r)=>s+r[6],0);
+      return totalUsr>=Math.max(1,minVol) ? { v: Math.round(totalLim/totalUsr), n: totalUsr } : null;
+    });
+    const base = limByMob[0]?.v;
+    html += `<tr>`;
+    html += `<td class="safra-name" style="border-left-color:${color}">${SAFRA_LABELS[sf]}</td>`;
+    mobs.forEach((mob, mi) => {
+      const entry = limByMob[mi];
+      const v = entry?.v;
+      const pct = (v && base) ? ((v - base) / base * 100) : null;
+      const isMob0 = mob===0;
+      const pctHtml = pct !== null && !isMob0
+        ? `<div class="pct${pct<0?' neg':''}">${pct>0?'+':''}${pct.toFixed(0)}%</div>`
+        : (isMob0 ? `<div class="pct" style="color:#aaa">base</div>` : '');
+      html += `<td class="${isMob0?'mob0':''}">
+        ${v ? `<div class="val">R$ ${fmt(v)}</div>${pctHtml}` : '<span style="color:#ddd" title="Volume insuficiente">—</span>'}
+      </td>`;
+    });
+    html += '</tr>';
+  });
+  document.getElementById('tblResume').innerHTML = html;
+  document.getElementById('tblResume').className = 'rtbl';
+}
+
+function updateCharts(){
+  const sf   = document.getElementById('selSafra').value;
+  const fx   = document.getElementById('selFaixa').value;
+  const mob  = document.getElementById('selMob').value;
+  const flg  = document.getElementById('selFlg').value;
+  const minV = parseInt(document.getElementById('selMinVol').value);
+  buildChartLimMob(sf, fx, mob, flg, minV, "all");
+  buildChartFaixaMob(sf, mob, flg, minV, "all");
+  buildChartAcima500(sf, mob, flg, minV, "all");
+  buildTableFx2(sf, mob, flg, minV);
+  buildTable(sf, fx, mob, flg, minV, "all");
+  buildTableResume(sf, fx, flg, minV, "all");
+}
+
+buildKPIs();
+buildChartLimMob("all","all","all","all",0,"all");
+buildChartFaixaMob("all","all","all",0,"all");
+buildChartEmissao();
+buildChartAcima500("all","all","all",0,"all");
+buildTableFx2("all","all","all",0);
+buildTable("all","all","all","all",0,"all");
+buildTableResume("all","all","all",0,"all");
+</script>
+</body>
+</html>
