@@ -1425,36 +1425,29 @@ function buildTableFx2(safraFilter, mobFilter, flgFilter, minVol=0){
   }
 
   // Header
-  let html = '<tr><th rowspan="2" style="min-width:65px">Safra</th><th rowspan="2">Emitidos</th><th rowspan="2" style="min-width:110px;text-align:left;padding-left:10px">Faixa</th>';
-  mobs.forEach(m=>html+=`<th style="text-align:center;min-width:105px">MOB ${m}</th>`);
-  html += '</tr><tr>';
-  mobs.forEach(()=>html+=`<th style="font-size:9px;font-weight:400;color:#999;padding:2px 4px;text-align:center;background:#2a2a3e">Lim.Méd · Usuários · Δ%</th>`);
+  let html = '<tr><th style="min-width:65px">Safra</th><th style="min-width:80px;text-align:left;padding-left:10px">Faixa</th>';
+  mobs.forEach(m=>html+=`<th style="text-align:center;min-width:80px">MOB ${m}</th>`);
   html += '</tr>';
 
   safras.forEach(sf=>{
-    const emitidos = RAW.find(r=>r[0]===sf)?.[1]||0;
-    const base = calc(sf,0,'all').lm; // MOB 0 total como base
+    const base = calc(sf,0,'all').lm;
 
     rows2.forEach((row,ri)=>{
       const isFirst = ri===0;
       html += `<tr style="background:${row.bg};${isFirst?'border-top:3px solid #1a1a2e;':''}">`;
-      if(isFirst) html += `<td rowspan="3" style="font-weight:700;vertical-align:middle;text-align:center;background:#f8f8f8;border-top:3px solid #1a1a2e;font-size:13px">${SAFRA_LABELS[sf]}</td><td rowspan="3" style="vertical-align:middle;text-align:center;background:#f8f8f8;font-size:12px;color:#555;border-top:3px solid #1a1a2e">${fmt(emitidos)}</td>`;
-      html += `<td style="padding:5px 5px 5px 10px;border-left:4px solid ${row.border};font-weight:700;font-size:12px;color:${row.key==='total'?'#ffe600':row.fg}">${row.label}</td>`;
+      if(isFirst) html += `<td rowspan="3" style="font-weight:700;vertical-align:middle;text-align:center;background:#f8f8f8;border-top:3px solid #1a1a2e;font-size:13px">${SAFRA_LABELS[sf]}</td>`;
+      html += `<td style="padding:6px 8px 6px 10px;border-left:4px solid ${row.border};font-weight:700;font-size:12px;color:${row.key==='total'?'#ffe600':row.fg}">${row.label}</td>`;
 
       mobs.forEach(mob=>{
         const {vol,lm} = calc(sf, mob, row.fx2);
         const belowMin = vol>0 && vol<minVol;
-        const pct = (lm&&base&&mob>0) ? ((lm-base)/base*100) : null;
-        const pctStr = pct!==null ? `<span style="font-size:10px;font-weight:600;color:${pct>=0?'#2e7d32':'#c62828'}">${pct>=0?'+':''}${pct.toFixed(0)}%</span>` : (mob===0?`<span style="font-size:10px;color:#888">base</span>`:'');
-
         let content;
-        if(belowMin) content = `<span style="color:#888;font-size:11px">—</span>`;
-        else if(lm){
+        if(belowMin||!lm) content = `<span style="color:#555">—</span>`;
+        else {
           const lmColor = row.key==='total'?'#ffe600':row.fg;
-          content = `<div style="font-weight:700;font-size:13px;color:${lmColor}">R$\u00a0${fmt(lm)}</div><div style="font-size:10px;color:${row.key==='total'?'#aaa':'#666'};margin-top:1px">${fmt(vol)} usuários</div><div style="margin-top:1px">${pctStr}</div>`;
-        } else content = `<span style="color:#555">—</span>`;
-
-        html += `<td style="padding:5px 8px;vertical-align:top;border-left:1px solid ${row.key==='total'?'#333':'#e0e8f4'}">${content}</td>`;
+          content = `<span style="font-weight:700;font-size:13px;color:${lmColor}">R$\u00a0${fmt(lm)}</span>`;
+        }
+        html += `<td style="padding:6px 8px;text-align:center;border-left:1px solid ${row.key==='total'?'#333':'#e0e8f4'}">${content}</td>`;
       });
       html += '</tr>';
     });
