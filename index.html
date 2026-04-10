@@ -1411,9 +1411,9 @@ function buildTableFx2(safraFilter, mobFilter, flgFilter, minVol=0){
   const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
 
   const rows2 = [
-    { key:'total', label:'Total Geral',    bg:'#1a1a2e', fg:'#ffe600', border:'#ffe600', fx2:'all'         },
     { key:'ate500', label:'≤ R$500',        bg:'#e8f3ff', fg:'#1e6fbf', border:'#1e6fbf', fx2:'01. ATE 500' },
     { key:'acima', label:'> R$500',         bg:'#fff8e8', fg:'#c07808', border:'#c07808', fx2:'02. ACIMA DE 500' },
+    { key:'total', label:'Total Geral',    bg:'#1a1a2e', fg:'#ffe600', border:'#ffe600', fx2:'all'         },
   ];
 
   // Helper: calcula lm e vol para um subgrupo
