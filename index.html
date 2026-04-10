@@ -22,7 +22,17 @@
   .card h2 { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 16px; text-transform: uppercase; letter-spacing: .4px; }
   .filters { display: flex; gap: 12px; padding: 0 32px 4px; flex-wrap: wrap; align-items: center; }
   .filters label { font-size: 12px; color: #666; }
-  .filters select { font-size: 12px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; }
+  .filters { flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+  .filter-group label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
+  .filter-group select[multiple] {
+    font-size: 12px; border: 1px solid #ddd; border-radius: 6px; background: #fff;
+    padding: 2px 4px; color: #333; cursor: pointer; outline: none;
+    min-width: 120px;
+  }
+  .filter-group select[multiple]:focus { border-color: #1a1a2e; box-shadow: 0 0 0 2px rgba(26,26,46,.1); }
+  .filter-group select[multiple] option { padding: 3px 6px; }
+  .filter-group select[multiple] option:checked { background: #1a1a2e; color: #ffe600; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th { background: #1a1a2e; color: #FFE600; padding: 8px 10px; text-align: center; font-weight: 600; }
   td { padding: 6px 10px; text-align: center; border-bottom: 1px solid #f0f0f0; }
@@ -98,62 +108,68 @@
 <div id="tab-dashboard" class="tab-content active">
 
 <div class="filters" style="margin-top:16px">
-  <label>Safra:</label>
-  <select id="selSafra" onchange="updateCharts()">
-    <option value="all">Todas</option>
-    <option value="202507">jul/25</option>
-    <option value="202508">ago/25</option>
-    <option value="202509">set/25</option>
-    <option value="202510">out/25</option>
-    <option value="202511">nov/25</option>
-    <option value="202512">dez/25</option>
-    <option value="202601">jan/26</option>
-    <option value="202602">fev/26</option>
-    <option value="202603">mar/26</option>
-    <option value="202604">abr/26</option>
-  </select>
-  <label style="margin-left:12px">Faixa:</label>
-  <select id="selFaixa" onchange="updateCharts()">
-    <option value="all">Todas</option>
-    <option value="01. ATE 100">01. ATE 100 (inicial)</option>
-    <option value="02. ATE 200">02. ATE 200 (grad. 1)</option>
-    <option value="03. ATE 300">03. ATE 300 (grad. 2)</option>
-    <option value="04. ATE 500">04. ATE 500 (Full TC)</option>
-    <option value="05. 501 A 700">05. 501 A 700</option>
-    <option value="06. 701 A 900">06. 701 A 900</option>
-    <option value="07. 901 A 1000">07. 901 A 1000</option>
-    <option value="08. 1001 A 1300">08. 1001 A 1300</option>
-    <option value="09. 1301 A 1500">09. 1301 A 1500</option>
-    <option value="10. 1501 A 2000">10. 1501 A 2000</option>
-    <option value="11. 2001 A 3000">11. 2001 A 3000</option>
-    <option value="12. ACIMA DE 3000">12. ACIMA DE 3000</option>
-  </select>
-  <label style="margin-left:12px">Carteira:</label>
-  <select id="selFlg" onchange="updateCharts()">
-    <option value="all">Todos</option>
-    <option value="1">Carteira Líquida (ativo + uso + não cancelado)</option>
-    <option value="0">Demais</option>
-  </select>
-  <label style="margin-left:12px">MOB:</label>
-  <select id="selMob" onchange="updateCharts()">
-    <option value="all">Todos</option>
-    <option value="0">MOB 0</option>
-    <option value="1">MOB 1</option>
-    <option value="2">MOB 2</option>
-    <option value="3">MOB 3</option>
-    <option value="4">MOB 4</option>
-    <option value="5">MOB 5</option>
-    <option value="6">MOB 6</option>
-    <option value="7">MOB 7</option>
-    <option value="8">MOB 8</option>
-  </select>
-  <label style="margin-left:12px">Mín. usuários:</label>
-  <select id="selMinVol" onchange="updateCharts()">
-    <option value="0">Sem filtro</option>
-    <option value="50">&gt; 50</option>
-    <option value="100">&gt; 100</option>
-    <option value="200">&gt; 200</option>
-  </select>
+  <div class="filter-group">
+    <label>Safra</label>
+    <select id="selSafra" multiple size="4" onchange="updateCharts()">
+      <option value="202507">jul/25</option>
+      <option value="202508">ago/25</option>
+      <option value="202509">set/25</option>
+      <option value="202510">out/25</option>
+      <option value="202511">nov/25</option>
+      <option value="202512">dez/25</option>
+      <option value="202601">jan/26</option>
+      <option value="202602">fev/26</option>
+      <option value="202603">mar/26</option>
+      <option value="202604">abr/26</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Faixa</label>
+    <select id="selFaixa" multiple size="4" onchange="updateCharts()">
+      <option value="01. ATE 100">≤ R$100 (inicial)</option>
+      <option value="02. ATE 200">≤ R$200 (grad. 1)</option>
+      <option value="03. ATE 300">≤ R$300 (grad. 2)</option>
+      <option value="04. ATE 500">≤ R$500 (Full TC)</option>
+      <option value="05. 501 A 700">R$501–700</option>
+      <option value="06. 701 A 900">R$701–900</option>
+      <option value="07. 901 A 1000">R$901–1000</option>
+      <option value="08. 1001 A 1300">R$1001–1300</option>
+      <option value="09. 1301 A 1500">R$1301–1500</option>
+      <option value="10. 1501 A 2000">R$1501–2000</option>
+      <option value="11. 2001 A 3000">R$2001–3000</option>
+      <option value="12. ACIMA DE 3000">Acima R$3000</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Carteira</label>
+    <select id="selFlg" multiple size="3" onchange="updateCharts()">
+      <option value="1">Carteira Líquida</option>
+      <option value="0">Demais</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>MOB</label>
+    <select id="selMob" multiple size="4" onchange="updateCharts()">
+      <option value="0">MOB 0</option>
+      <option value="1">MOB 1</option>
+      <option value="2">MOB 2</option>
+      <option value="3">MOB 3</option>
+      <option value="4">MOB 4</option>
+      <option value="5">MOB 5</option>
+      <option value="6">MOB 6</option>
+      <option value="7">MOB 7</option>
+      <option value="8">MOB 8</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Mín. usuários</label>
+    <select id="selMinVol" size="4" onchange="updateCharts()">
+      <option value="0" selected>Sem filtro</option>
+      <option value="50">&gt; 50</option>
+      <option value="100">&gt; 100</option>
+      <option value="200">&gt; 200</option>
+    </select>
+  </div>
 </div>
 
 <div class="grid">
@@ -1264,16 +1280,17 @@ const NO_GRID = { grid:{ display:false } };
 
 // r[5]=FLG_LIMITEMEDIO_R_MICRO (0|1), r[6]=QNT_ATIVOS, r[7]=LIMITE_MEDIO
 function filterRaw(r, flg){
-  return flg==="all" || String(r[5])===String(flg);
+  if (!flg || flg.length===0) return true;
+  return flg.includes(String(r[5]));
 }
 
 // Chart 1
 function buildChartLimMob(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
-  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
-  const mobs = mobFilter==="all" ? [0,1,2,3,4,5,6,7,8] : [parseInt(mobFilter)];
+  const safras = safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter;
+  const mobs = mobFilter.length===0 ? [0,1,2,3,4,5,6,7,8] : mobFilter.map(Number);
   const datasets = safras.map(sf=>{
     const data = mobs.map(mob=>{
-      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && (faixaFilter==="all"||r[3]===faixaFilter) && filterRaw(r,flgFilter));
+      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && (faixaFilter.length===0||faixaFilter.includes(r[3])) && filterRaw(r,flgFilter));
       const totalLim = rows.reduce((s,r)=>s+r[6]*r[7],0);
       const totalUsr = rows.reduce((s,r)=>s+r[6],0);
       return totalUsr>=Math.max(1,minVol) ? Math.round(totalLim/totalUsr) : null;
@@ -1306,9 +1323,9 @@ function buildChartLimMob(safraFilter, faixaFilter, mobFilter, flgFilter, minVol
 
 // Chart 2
 function buildChartFaixaMob(safraFilter, mobFilter, flgFilter, minVol=0){
-  const sf = safraFilter==="all" ? "202507" : safraFilter;
+  const sf = safraFilter.length===0 ? "202507" : safraFilter[0];
   const allMobs = [1,2,3,4,5,6,7,8];
-  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+  const mobs = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(String(m)));
   const faixas = [...new Set(RAW.filter(r=>r[0]===sf&&filterRaw(r,flgFilter)).map(r=>r[3]))].sort();
   const datasets = faixas.map(fx=>{
     const data = mobs.map(mob=>{
@@ -1366,19 +1383,28 @@ function buildChartEmissao(){
 }
 
 // Chart 4
-function buildChartAcima500(safraFilter, mobFilter, flgFilter, minVol=0){
-  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
-  const allMobs = [1,2,3,4,5,6,7,8];
-  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+function buildChartAcima500(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
+  const safras = safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter;
+  const allMobs = [0,1,2,3,4,5,6,7,8];
+  const mobs = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(String(m)));
+  // Se faixa filtrada, usa ela; senão mostra só acima de R$500
+  const useFaixaGroup = faixaFilter.length===0;
   const datasets = safras.map(sf=>{
     const data = mobs.map(mob=>{
-      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && r[4]==="02. ACIMA DE 500" && filterRaw(r,flgFilter));
+      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob
+        && (useFaixaGroup ? r[4]==="02. ACIMA DE 500" : faixaFilter.includes(r[3]))
+        && filterRaw(r,flgFilter));
       const totalLim = rows.reduce((s,r)=>s+r[6]*r[7],0);
       const totalUsr = rows.reduce((s,r)=>s+r[6],0);
-      return totalUsr>=Math.max(10,minVol) ? Math.round(totalLim/totalUsr) : null;
+      return totalUsr>=Math.max(1,minVol) ? Math.round(totalLim/totalUsr) : null;
     });
     return { label:SAFRA_LABELS[sf], data, borderColor:SAFRA_COLORS[sf], backgroundColor:SAFRA_COLORS[sf]+'33', fill:false, tension:.3, pointRadius:4 };
   });
+  // Atualiza título do card
+  const titulo = useFaixaGroup ? 'Limite Médio — Acima de R$500 por Safra × MOB'
+    : 'Limite Médio — Faixa selecionada por Safra × MOB';
+  const h2El = document.getElementById('chartAcima500')?.closest('.card')?.querySelector('h2');
+  if(h2El) h2El.textContent = titulo;
   if(charts.acima500) charts.acima500.destroy();
   charts.acima500 = new Chart(document.getElementById('chartAcima500'),{
     type:'line', data:{labels:mobs, datasets},
@@ -1387,9 +1413,19 @@ function buildChartAcima500(safraFilter, mobFilter, flgFilter, minVol=0){
         x:{...NO_GRID, title:{display:true,text:'MOB'}},
         y:{...NO_GRID, title:{display:true,text:'Limite Médio (R$)'},ticks:{callback:v=>'R$ '+v.toLocaleString('pt-BR')}}
       },
-      plugins:{legend:{position:'top'}},
-      responsive:true, maintainAspectRatio:true
-    }
+      plugins:{
+        legend:{position:'top'},
+        datalabels:{
+          display: ctx => { const d=ctx.dataset.data; const vi=d.map((v,i)=>v!=null?i:-1).filter(i=>i>=0); return ctx.dataIndex===vi[vi.length-1]; },
+          align:'right', anchor:'end', clamp:false, clip:false, offset:6,
+          color:ctx=>ctx.dataset.borderColor, font:{weight:'700',size:11},
+          formatter:(v,ctx)=>v?ctx.dataset.label+'\nR$ '+Math.round(v).toLocaleString('pt-BR'):'',
+          textAlign:'left'
+        }
+      },
+      layout:{padding:{right:90}}, responsive:true, maintainAspectRatio:true
+    },
+    plugins:[ChartDataLabels]
   });
 }
 
@@ -1411,9 +1447,9 @@ const FAIXA_META = {
 
 // ── Tabela resumo 2 faixas (nova — primeira tabela) ──────────────────────────
 function buildTableFx2(safraFilter, mobFilter, flgFilter, minVol=0){
-  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const safras = safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter;
   const allMobs = [0,1,2,3,4,5,6,7,8];
-  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+  const mobs = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(String(m)));
 
   const rows2 = [
     { key:'ate500', label:'≤ R$500',        bg:'#e8f3ff', fg:'#1e6fbf', border:'#1e6fbf', fx2:'01. ATE 500' },
@@ -1462,9 +1498,9 @@ function buildTableFx2(safraFilter, mobFilter, flgFilter, minVol=0){
 
 // ── Tabela detalhe por faixa ──────────────────────────────────────────────────
 function buildTable(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
-  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const safras = safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter;
   const allMobs = [0,1,2,3,4,5,6,7,8];
-  const mobs = mobFilter==="all" ? allMobs : allMobs.filter(m=>m===parseInt(mobFilter));
+  const mobs = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(String(m)));
   const MICRO_FAIXAS = ['01. ATE 100','02. ATE 200','03. ATE 300','04. ATE 500'];
 
   let html = '<tr><th rowspan="2" style="min-width:60px">Safra</th><th rowspan="2" style="min-width:55px">Emitidos</th><th rowspan="2" style="min-width:130px;text-align:left;padding-left:12px">Faixa de Limite</th>';
@@ -1475,9 +1511,9 @@ function buildTable(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
 
   safras.forEach(sf=>{
     const emitidos = RAW.find(r=>r[0]===sf)?.[1]||0;
-    const faixas = faixaFilter==="all"
+    const faixas = faixaFilter.length===0
       ? [...new Set(RAW.filter(r=>r[0]===sf&&filterRaw(r,flgFilter)).map(r=>r[3]))].sort()
-      : [faixaFilter];
+      : faixaFilter;
 
     if(!faixas.length) return; // safra sem dados — pula
 
@@ -1525,17 +1561,17 @@ function buildTable(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
     });
 
     // Linha TOTAL SAFRA
-    html += `<tr style="background:#1a1a2e;border-bottom:3px solid #1a1a2e">`;
-    html += `<td style="font-size:11px;font-weight:700;color:#ffe600;padding:5px 5px 5px 12px;letter-spacing:.06em;border-left:4px solid #ffe600">TOTAL SAFRA</td>`;
+    html += `<tr style="background:#777;border-bottom:3px solid #555">`;
+    html += `<td style="font-size:11px;font-weight:700;color:#fff;padding:5px 5px 5px 12px;letter-spacing:.06em;border-left:4px solid #ccc">TOTAL SAFRA</td>`;
     mobs.forEach(mob=>{
       const allRows = RAW.filter(r=>r[0]===sf&&r[2]===mob&&filterRaw(r,flgFilter));
       const vol = allRows.reduce((s,r)=>s+r[6],0);
       const lm  = vol>0 ? Math.round(allRows.reduce((s,r)=>s+r[6]*r[7],0)/vol) : null;
       const belowMin = vol>0 && vol<minVol;
-      const content = belowMin ? `<span style="color:#555">—</span>`
-        : lm ? `<div style="font-weight:800;font-size:14px;color:#ffe600">R$\u00a0${fmt(lm)}</div><div style="font-size:10px;color:#aaa;margin-top:1px">${fmt(vol)} usuários</div>`
-             : `<span style="color:#555">—</span>`;
-      html += `<td style="padding:5px 8px;vertical-align:top;border-left:1px solid #333">${content}</td>`;
+      const content = belowMin ? `<span style="color:#ccc">—</span>`
+        : lm ? `<div style="font-weight:800;font-size:14px;color:#fff">R$\u00a0${fmt(lm)}</div><div style="font-size:10px;color:#ddd;margin-top:1px">${fmt(vol)} usuários</div>`
+             : `<span style="color:#ccc">—</span>`;
+      html += `<td style="padding:5px 8px;vertical-align:top;border-left:1px solid #999">${content}</td>`;
     });
     html += '</tr>';
   });
@@ -1544,7 +1580,7 @@ function buildTable(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
 
 // Resume table: safra × MOB com limite médio e % vs MOB 0
 function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0){
-  const safras = safraFilter==="all" ? Object.keys(SAFRA_LABELS) : [safraFilter];
+  const safras = safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter;
   const mobs = [0,1,2,3,4,5,6,7,8];
   const safraColors = Object.values(SAFRA_COLORS);
 
@@ -1557,7 +1593,7 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0){
     // Calc limit average per MOB (all faixas or filtered)
     const limByMob = mobs.map(mob => {
       const rows = RAW.filter(r => r[0]===sf && r[2]===mob
-        && (faixaFilter==="all"||r[3]===faixaFilter)
+        && (faixaFilter.length===0||faixaFilter.includes(r[3]))
         && filterRaw(r, flgFilter));
       const totalLim = rows.reduce((s,r)=>s+r[6]*r[7],0);
       const totalUsr = rows.reduce((s,r)=>s+r[6],0);
@@ -1584,28 +1620,34 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0){
   document.getElementById('tblResume').className = 'rtbl';
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getSelValues(id) {
+  return [...document.getElementById(id).selectedOptions].map(o => o.value);
+}
+
 function updateCharts(){
-  const sf   = document.getElementById('selSafra').value;
-  const fx   = document.getElementById('selFaixa').value;
-  const mob  = document.getElementById('selMob').value;
-  const flg  = document.getElementById('selFlg').value;
-  const minV = parseInt(document.getElementById('selMinVol').value);
-  buildChartLimMob(sf, fx, mob, flg, minV, "all");
-  buildChartFaixaMob(sf, mob, flg, minV, "all");
-  buildChartAcima500(sf, mob, flg, minV, "all");
+  const sf   = getSelValues('selSafra');
+  const fx   = getSelValues('selFaixa');
+  const mob  = getSelValues('selMob').map(Number);
+  const flg  = getSelValues('selFlg');
+  const minV = parseInt(document.getElementById('selMinVol').value) || 0;
+  buildChartLimMob(sf, fx, mob, flg, minV);
+  buildChartFaixaMob(sf, mob, flg, minV);
+  buildChartAcima500(sf, fx, mob, flg, minV);
   buildTableFx2(sf, mob, flg, minV);
-  buildTable(sf, fx, mob, flg, minV, "all");
-  buildTableResume(sf, fx, flg, minV, "all");
+  buildTable(sf, fx, mob, flg, minV);
+  buildTableResume(sf, fx, flg, minV);
 }
 
 buildKPIs();
-buildChartLimMob("all","all","all","all",0,"all");
-buildChartFaixaMob("all","all","all",0,"all");
+buildChartLimMob([],[],[],[],0);
+buildChartFaixaMob([],[],[],0);
 buildChartEmissao();
-buildChartAcima500("all","all","all",0,"all");
-buildTableFx2("all","all","all",0);
-buildTable("all","all","all","all",0,"all");
-buildTableResume("all","all","all",0,"all");
+buildChartAcima500([],[],[],[],0);
+buildTableFx2([],[],[],0);
+buildTable([],[],[],[],0);
+buildTableResume([],[],[],0);
 </script>
 </body>
 </html>
