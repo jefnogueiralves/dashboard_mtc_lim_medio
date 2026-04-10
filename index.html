@@ -1549,7 +1549,7 @@ function buildTable(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0){
     html += `<tr style="background:#777;border-bottom:3px solid #555">`;
     html += `<td style="font-size:11px;font-weight:700;color:#fff;padding:5px 5px 5px 12px;letter-spacing:.06em;border-left:4px solid #ccc">TOTAL SAFRA</td>`;
     mobs.forEach(mob=>{
-      const allRows = RAW.filter(r=>r[0]===sf&&r[2]===mob&&filterRaw(r,flgFilter));
+      const allRows = RAW.filter(r=>r[0]===sf&&r[2]===mob&&(faixaFilter.length===0||faixaFilter.includes(r[3]))&&filterRaw(r,flgFilter));
       const vol = allRows.reduce((s,r)=>s+r[6],0);
       const lm  = vol>0 ? Math.round(allRows.reduce((s,r)=>s+r[6]*r[7],0)/vol) : null;
       const belowMin = vol>0 && vol<minVol;
