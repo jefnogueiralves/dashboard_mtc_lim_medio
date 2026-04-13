@@ -9857,7 +9857,7 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0, fx2='',
   fill('pMob',      MOB_OPTS);
   fill('pPolitica', POLITICA_OPTS);
 
-  const MINVOL_OPTS = [['0','Sem filtro'],['50','> 50'],['100','> 100'],['200','> 200']];
+  const MINVOL_OPTS = [['0','Sem filtro'],['10','> 10'],['20','> 20'],['30','> 30'],['50','> 50'],['100','> 100'],['200','> 200']];
   document.getElementById('pMinVol').innerHTML = MINVOL_OPTS.map(([v,lbl],i) =>
     `<label class="ms-item"><input type="radio" name="minvol" value="${v}" onchange="minVolCh()" ${i===0?'checked':''}> ${lbl}</label>`
   ).join('');
