@@ -9481,21 +9481,38 @@ function filterRaw(r, flg, fx2, pol){
 function buildChartLimMob(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0, fx2='', pol=[]){
   const safras = safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter;
   const mobs = mobFilter.length===0 ? [0,1,2,3,4,5,6,7,8] : mobFilter.map(Number);
-  const datasets = safras.map(sf=>{
+
+  // Compute raw series per safra
+  const rawSeries = safras.map(sf=>{
     const data = mobs.map(mob=>{
       const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && (faixaFilter.length===0||faixaFilter.includes(r[3])) && filterRaw(r,flgFilter,fx2,pol));
       const totalLim = rows.reduce((s,r)=>s+r[7]*r[8],0);
       const totalUsr = rows.reduce((s,r)=>s+r[7],0);
       return totalUsr>=Math.max(1,minVol) ? Math.round(totalLim/totalUsr) : null;
     });
-    return { label:SAFRA_LABELS[sf], data, borderColor:SAFRA_COLORS[sf], backgroundColor:SAFRA_COLORS[sf]+'33', fill:false, tension:.3, pointRadius:4 };
+    return {sf, data};
   });
+
+  // Rebase: MOB 0 = primeiro mês com dados no grupo filtrado
+  const rebased = rawSeries.map(({sf, data})=>{
+    const first = data.findIndex(v=>v!==null);
+    return {sf, data: first>0 ? data.slice(first) : data, offset: Math.max(0,first)};
+  });
+  const anyRebased = rebased.some(r=>r.offset>0);
+  const maxLen = Math.max(...rebased.map(r=>r.data.length), 1);
+  const labels = anyRebased ? Array.from({length:maxLen},(_,i)=>'Mês +'+i) : mobs;
+
+  const datasets = rebased.map(({sf, data})=>{
+    const padded = [...data, ...Array(maxLen-data.length).fill(null)];
+    return { label:SAFRA_LABELS[sf], data:padded, borderColor:SAFRA_COLORS[sf], backgroundColor:SAFRA_COLORS[sf]+'33', fill:false, tension:.3, pointRadius:4 };
+  });
+
   if(charts.limMob) charts.limMob.destroy();
   charts.limMob = new Chart(document.getElementById('chartLimMob'),{
-    type:'line', data:{labels:mobs, datasets},
+    type:'line', data:{labels, datasets},
     options:{
       scales:{
-        x:{...NO_GRID, title:{display:true,text:'MOB'}},
+        x:{...NO_GRID, title:{display:true, text: anyRebased ? 'Meses após atingir limite filtrado' : 'MOB'}},
         y:{...NO_GRID, title:{display:true,text:'Limite Médio (R$)'},ticks:{callback:v=>'R$ '+v.toLocaleString('pt-BR')}}
       },
       plugins:{
@@ -9518,8 +9535,16 @@ function buildChartLimMob(safraFilter, faixaFilter, mobFilter, flgFilter, minVol
 function buildChartFaixaMob(safraFilter, mobFilter, flgFilter, minVol=0, fx2='', pol=[]){
   const sf = safraFilter.length===0 ? "202507" : safraFilter[0];
   const allMobs = [1,2,3,4,5,6,7,8];
-  const mobs = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(String(m)));
+  const allMobsFiltered = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(String(m)));
   const faixas = [...new Set(RAW.filter(r=>r[0]===sf&&filterRaw(r,flgFilter,fx2,pol)).map(r=>r[3]))].sort();
+
+  // Rebase: MOB 0 = primeiro mês com usuários no grupo filtrado
+  const firstIdx = allMobsFiltered.findIndex(mob=>
+    RAW.filter(r=>r[0]===sf && r[2]===mob && filterRaw(r,flgFilter,fx2,pol)).reduce((s,r)=>s+r[7],0) > 0
+  );
+  const mobs = firstIdx>0 ? allMobsFiltered.slice(firstIdx) : allMobsFiltered;
+  const anyRebased = firstIdx>0;
+
   const datasets = faixas.map(fx=>{
     const data = mobs.map(mob=>{
       const rows = RAW.filter(r=>r[0]===sf && r[2]===mob && filterRaw(r,flgFilter,fx2,pol));
@@ -9530,12 +9555,13 @@ function buildChartFaixaMob(safraFilter, mobFilter, flgFilter, minVol=0, fx2='',
     });
     return { label:fx, data, backgroundColor:FAIXA_COLORS[fx]||'#ccc', stack:'s' };
   });
+  const labels = anyRebased ? mobs.map((_,i)=>'Mês +'+i) : mobs;
   if(charts.faixaMob) charts.faixaMob.destroy();
   charts.faixaMob = new Chart(document.getElementById('chartFaixaMob'),{
-    type:'bar', data:{labels:mobs, datasets},
+    type:'bar', data:{labels, datasets},
     options:{
       scales:{
-        x:{...NO_GRID, stacked:true, title:{display:true,text:'MOB'}},
+        x:{...NO_GRID, stacked:true, title:{display:true, text: anyRebased ? 'Meses após atingir limite filtrado' : 'MOB'}},
         y:{...NO_GRID, stacked:true, max:100, title:{display:true,text:'% Usuários'}, ticks:{callback:v=>v+'%'}}
       },
       plugins:{
