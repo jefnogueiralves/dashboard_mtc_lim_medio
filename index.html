@@ -224,6 +224,46 @@
   </div>
 </div>
 
+<div class="grid full" style="padding-bottom:8px">
+  <div class="card">
+    <h2>Nível de Atendimento de Limite por Safra × MOB</h2>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">
+      <strong>Nível agrupado</strong> = Σ(Limite+Overlimit) / Σ(max(Renda, Saldo SCR M-1)) &nbsp;·&nbsp;
+      <span style="color:#c07808">⚠ Limite com overlimit pode divergir da base histórica (ticket aberto)</span> &nbsp;·&nbsp;
+      Fonte: DM_REACH_INDIVIDUALS_CUS
+    </div>
+    <div style="display:flex;gap:20px;align-items:center;margin-bottom:14px;font-size:12px;padding:8px 12px;background:#f8f8f8;border-radius:8px;width:fit-content">
+      <span style="font-weight:600">Público:</span>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="radio" name="rdReach" value="-1" checked onchange="updateCharts()"> Todos
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="radio" name="rdReach" value="1" onchange="updateCharts()"> Somente elegíveis (FLG_REACH = 1)
+      </label>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#1e6fbf;margin-bottom:6px">≤ R$500 — Micro TC</div>
+        <canvas id="chartAtend500" style="max-height:260px"></canvas>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#c07808;margin-bottom:6px">Acima de R$500 — Graduados</div>
+        <canvas id="chartAtendAcima" style="max-height:260px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid full" style="padding-bottom:32px">
+  <div class="card">
+    <h2>Nível de Atendimento — Tabela por Safra × MOB</h2>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">
+      Nível agrupado = Σ(Limite+Overlimit) / Σ(Denominador) &nbsp;·&nbsp; 3 linhas por safra: <strong>Total</strong> · <span style="color:#1e6fbf">≤ R$500</span> · <span style="color:#c07808">&gt; R$500</span>
+    </div>
+    <div style="overflow-x:auto"><table id="tblAtendimento" class="rtbl"></table></div>
+  </div>
+</div>
+
 </div><!-- /tab-dashboard -->
 
 <!-- TAB: Insights & Acionáveis -->
@@ -9422,6 +9462,119 @@ const RAW = [
   ["202604",74985,0,"01. ATE 100","01. ATE 500",0,"PORTABILIDADE",3855,100]
 ];
 
+// REACH_RAW: [SAFRA, MOB, FX_LIMITE2, FLG_REACH, QNT_USR, SOMA_LIMITE_OVERLIMIT, SOMA_DENOMINADOR]
+// Denominador = max(Renda, Saldo SCR M-1) · Fonte: DM_REACH_INDIVIDUALS_CUS · Safras jul/25–fev/26
+const REACH_RAW = [
+["202507",0,"01. ATE 500",0,132068,16511150.0,368041858.0],
+["202507",0,"02. ACIMA DE 500",0,249,143660.0,822844.0],
+["202507",1,"01. ATE 500",0,133327,22108030.0,379138177.0],
+["202507",1,"02. ACIMA DE 500",0,701,385750.0,2188941.0],
+["202507",2,"01. ATE 500",0,132538,27649020.0,420161010.0],
+["202507",2,"02. ACIMA DE 500",0,1149,645200.0,4031470.0],
+["202507",3,"01. ATE 500",0,131337,30711480.0,433351429.0],
+["202507",3,"02. ACIMA DE 500",0,1956,1088600.0,7095121.0],
+["202507",4,"01. ATE 500",0,126420,32478890.0,448752796.0],
+["202507",4,"02. ACIMA DE 500",0,4833,2817505.0,19027697.0],
+["202507",5,"01. ATE 500",0,121389,33661780.0,421398001.0],
+["202507",5,"01. ATE 500",1,20,10000.0,93269.0],
+["202507",5,"02. ACIMA DE 500",0,7641,4916630.0,28713330.0],
+["202507",5,"02. ACIMA DE 500",1,170,131010.0,641987.0],
+["202507",6,"01. ATE 500",0,112815,32325170.0,392499942.0],
+["202507",6,"01. ATE 500",1,46,23000.0,178627.0],
+["202507",6,"02. ACIMA DE 500",0,13400,8931640.0,47847464.0],
+["202507",6,"02. ACIMA DE 500",1,622,542290.0,2366559.0],
+["202507",7,"01. ATE 500",0,96686,26692200.0,347283738.0],
+["202507",7,"01. ATE 500",1,126,63000.0,538341.0],
+["202507",7,"02. ACIMA DE 500",0,26295,18316460.0,98355923.0],
+["202507",7,"02. ACIMA DE 500",1,1237,1131980.0,4931620.0],
+["202507",8,"01. ATE 500",0,84187,23100660.0,302779801.0],
+["202507",8,"01. ATE 500",1,236,118000.0,1018003.0],
+["202507",8,"02. ACIMA DE 500",0,34990,25116110.0,130386350.0],
+["202507",8,"02. ACIMA DE 500",1,2305,2307875.0,9395977.0],
+["202508",0,"01. ATE 500",0,124993,15684770.0,344104862.0],
+["202508",0,"02. ACIMA DE 500",0,38,27310.0,128842.0],
+["202508",1,"01. ATE 500",0,125868,21058530.0,382131062.0],
+["202508",1,"02. ACIMA DE 500",0,305,167750.0,987682.0],
+["202508",2,"01. ATE 500",0,125035,25836080.0,392575257.0],
+["202508",2,"02. ACIMA DE 500",0,816,448800.0,2886262.0],
+["202508",3,"01. ATE 500",0,123708,28731790.0,439334495.0],
+["202508",3,"02. ACIMA DE 500",0,1763,969750.0,7363281.0],
+["202508",4,"01. ATE 500",0,120035,30683600.0,416938537.0],
+["202508",4,"02. ACIMA DE 500",0,3483,2134710.0,13252669.0],
+["202508",5,"01. ATE 500",0,112869,30361510.0,392426336.0],
+["202508",5,"01. ATE 500",1,20,10000.0,84242.0],
+["202508",5,"02. ACIMA DE 500",0,8539,5605665.0,30381045.0],
+["202508",5,"02. ACIMA DE 500",1,61,55910.0,254284.0],
+["202508",6,"01. ATE 500",0,97922,25486680.0,352220638.0],
+["202508",6,"01. ATE 500",1,54,27000.0,214185.0],
+["202508",6,"02. ACIMA DE 500",0,20879,14141195.0,78139176.0],
+["202508",6,"02. ACIMA DE 500",1,422,380690.0,1884669.0],
+["202508",7,"01. ATE 500",0,84745,21878190.0,304869321.0],
+["202508",7,"01. ATE 500",1,121,60500.0,469353.0],
+["202508",7,"02. ACIMA DE 500",0,30747,21427670.0,114390291.0],
+["202508",7,"02. ACIMA DE 500",1,1266,1216890.0,5489906.0],
+["202509",0,"01. ATE 500",0,116318,14476560.0,340925410.0],
+["202509",0,"02. ACIMA DE 500",0,19,16560.0,71925.0],
+["202509",1,"01. ATE 500",0,118443,19645570.0,361262858.0],
+["202509",1,"02. ACIMA DE 500",0,377,207350.0,1255254.0],
+["202509",2,"01. ATE 500",0,117332,24319390.0,411509725.0],
+["202509",2,"02. ACIMA DE 500",0,1218,670050.0,4860681.0],
+["202509",3,"01. ATE 500",0,116446,27339580.0,403978315.0],
+["202509",3,"02. ACIMA DE 500",0,1794,986850.0,7119889.0],
+["202509",4,"01. ATE 500",0,110141,27671580.0,381043784.0],
+["202509",4,"02. ACIMA DE 500",0,6205,3907050.0,23139257.0],
+["202509",5,"01. ATE 500",0,96827,23825980.0,345510509.0],
+["202509",5,"01. ATE 500",1,7,3500.0,55040.0],
+["202509",5,"02. ACIMA DE 500",0,17482,11557565.0,67410287.0],
+["202509",5,"02. ACIMA DE 500",1,44,34300.0,248811.0],
+["202509",6,"01. ATE 500",0,83855,20579300.0,298450885.0],
+["202509",6,"01. ATE 500",1,61,30500.0,278391.0],
+["202509",6,"02. ACIMA DE 500",0,27689,18767060.0,105870241.0],
+["202509",6,"02. ACIMA DE 500",1,575,513690.0,2462552.0],
+["202510",0,"01. ATE 500",0,166987,17815160.0,474390240.0],
+["202510",0,"02. ACIMA DE 500",0,38,33510.0,113911.0],
+["202510",1,"01. ATE 500",0,168327,25595800.0,542670520.0],
+["202510",1,"02. ACIMA DE 500",0,483,265650.0,1788407.0],
+["202510",2,"01. ATE 500",0,167406,32806720.0,548567537.0],
+["202510",2,"02. ACIMA DE 500",0,1086,597300.0,3917694.0],
+["202510",3,"01. ATE 500",0,166532,37033280.0,545060439.0],
+["202510",3,"02. ACIMA DE 500",0,1629,1044400.0,5845330.0],
+["202510",4,"01. ATE 500",0,153166,35059290.0,520625155.0],
+["202510",4,"02. ACIMA DE 500",0,12141,7496610.0,45244845.0],
+["202510",5,"01. ATE 500",0,134024,30826430.0,455344821.0],
+["202510",5,"01. ATE 500",1,13,6500.0,47311.0],
+["202510",5,"02. ACIMA DE 500",0,28136,17938315.0,102263639.0],
+["202510",5,"02. ACIMA DE 500",1,73,58980.0,328733.0],
+["202511",0,"01. ATE 500",0,162866,16947370.0,466535330.0],
+["202511",0,"02. ACIMA DE 500",0,21,15200.0,70353.0],
+["202511",1,"01. ATE 500",0,164635,24743960.0,502127143.0],
+["202511",1,"02. ACIMA DE 500",0,479,263450.0,1603059.0],
+["202511",2,"01. ATE 500",0,164181,31563050.0,505185639.0],
+["202511",2,"02. ACIMA DE 500",0,616,397850.0,2035120.0],
+["202511",3,"01. ATE 500",0,160357,34255340.0,509868534.0],
+["202511",3,"02. ACIMA DE 500",0,4017,2393720.0,14380160.0],
+["202511",4,"01. ATE 500",0,145405,31892890.0,465488781.0],
+["202511",4,"02. ACIMA DE 500",0,16167,9956635.0,56012200.0],
+["202512",0,"01. ATE 500",0,98378,10168620.0,291849655.0],
+["202512",0,"02. ACIMA DE 500",0,12,9750.0,40693.0],
+["202512",1,"01. ATE 500",0,99317,14517100.0,305422352.0],
+["202512",1,"02. ACIMA DE 500",0,9,4950.0,29745.0],
+["202512",2,"01. ATE 500",0,97405,17579230.0,302812023.0],
+["202512",2,"02. ACIMA DE 500",0,1699,974550.0,5588599.0],
+["202512",3,"01. ATE 500",0,94802,19061290.0,301568218.0],
+["202512",3,"02. ACIMA DE 500",0,4009,2362870.0,13701136.0],
+["202601",0,"01. ATE 500",0,144898,14704800.0,403197790.0],
+["202601",0,"02. ACIMA DE 500",0,12,10900.0,29473.0],
+["202601",1,"01. ATE 500",0,146433,20874030.0,411253278.0],
+["202601",1,"02. ACIMA DE 500",0,1150,632500.0,3499467.0],
+["202601",2,"01. ATE 500",0,144184,26152400.0,421005668.0],
+["202601",2,"02. ACIMA DE 500",0,3087,1742900.0,10399493.0],
+["202602",0,"01. ATE 500",0,116128,11802290.0,313422632.0],
+["202602",0,"02. ACIMA DE 500",0,31,20200.0,111537.0],
+["202602",1,"01. ATE 500",0,116414,16179110.0,337925251.0],
+["202602",1,"02. ACIMA DE 500",0,1263,694650.0,3971627.0]
+];
+
 const SAFRA_LABELS = {"202503":"mar/25","202504":"abr/25","202505":"mai/25","202506":"jun/25","202507":"jul/25","202508":"ago/25","202509":"set/25","202510":"out/25","202511":"nov/25","202512":"dez/25","202601":"jan/26","202602":"fev/26","202603":"mar/26","202604":"abr/26"};
 const SAFRA_COLORS = {
   "202503":"#d0bfff","202504":"#b197fc","202505":"#9775fa","202506":"#845ef7","202507":"#aaaaaa", "202508":"#888888", "202509":"#606060",  // antigas → cinza
@@ -9839,6 +9992,110 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0, fx2='',
   document.getElementById('tblResume').className = 'rtbl';
 }
 
+// ── Nível de Atendimento ─────────────────────────────────────────────────────
+function getFlgReach(){
+  const sel = document.querySelector('input[name="rdReach"]:checked');
+  return sel ? parseInt(sel.value) : -1;
+}
+
+function buildChartAtendimentoFx(canvasId, chartKey, fx2Filter, safraFilter, mobFilter, flgReach){
+  const reachSafras = [...new Set(REACH_RAW.map(r=>r[0]))];
+  const safras = (safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter).filter(s=>reachSafras.includes(s));
+  const allMobs = [0,1,2,3,4,5,6,7,8];
+  const mobs = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(m));
+  const rawSeries = safras.map(sf=>{
+    const data = mobs.map(mob=>{
+      const rows = REACH_RAW.filter(r=>r[0]===sf && r[1]===mob && r[2]===fx2Filter && (flgReach===-1 || r[3]===flgReach));
+      const somaLim = rows.reduce((s,r)=>s+r[5], 0);
+      const somaDen = rows.reduce((s,r)=>s+r[6], 0);
+      return somaDen>0 ? Math.round(somaLim/somaDen*1000)/10 : null;
+    });
+    return {sf, data};
+  });
+  const rebased = rawSeries.map(({sf,data})=>{
+    const first = data.findIndex(v=>v!==null);
+    return {sf, data: first>0 ? data.slice(first) : data, offset: Math.max(0,first)};
+  });
+  const anyRebased = rebased.some(r=>r.offset>0);
+  const maxLen = Math.max(...rebased.map(r=>r.data.length), 1);
+  const labels = anyRebased ? Array.from({length:maxLen},(_,i)=>'Mês +'+i) : allMobs.slice(0, maxLen).map(m=>'MOB '+m);
+  const datasets = rebased.map(({sf,data})=>({
+    label: SAFRA_LABELS[sf]||sf,
+    data: [...data, ...Array(maxLen - data.length).fill(null)],
+    borderColor: SAFRA_COLORS[sf]||'#888',
+    backgroundColor: (SAFRA_COLORS[sf]||'#888')+'33',
+    fill: false, tension: .3, pointRadius: 4
+  }));
+  if(charts[chartKey]) charts[chartKey].destroy();
+  charts[chartKey] = new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {labels, datasets},
+    options: {
+      scales: {
+        x: {...NO_GRID, title:{display:true, text: anyRebased?'Meses após atingir limite filtrado':'MOB'}},
+        y: {...NO_GRID, title:{display:true, text:'Atendimento (%)'}, ticks:{callback:v=>v+'%'}, min:0}
+      },
+      plugins: {
+        legend: {position:'top'},
+        datalabels: {
+          display: ctx=>{
+            const d = ctx.dataset.data;
+            const vi = d.map((v,i)=>v!=null?i:-1).filter(i=>i>=0);
+            return vi.length>0 && ctx.dataIndex===vi[vi.length-1];
+          },
+          align:'right', anchor:'end', clamp:false, clip:false, offset:6,
+          color: ctx=>ctx.dataset.borderColor,
+          font: {weight:'700', size:11},
+          formatter: (v,ctx)=>v ? ctx.dataset.label+'\n'+v+'%' : '',
+          textAlign: 'left'
+        }
+      },
+      layout: {padding:{right:90}},
+      responsive: true, maintainAspectRatio: true
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+function buildTableAtendimento(safraFilter, mobFilter, flgReach){
+  const reachSafras = [...new Set(REACH_RAW.map(r=>r[0]))];
+  const safras = (safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter).filter(s=>reachSafras.includes(s));
+  const allMobs = [0,1,2,3,4,5,6,7,8];
+  const mobs = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(m));
+  const rows2 = [
+    {key:'ate500', label:'≤ R$500', bg:'#e8f3ff', fg:'#1e6fbf', border:'#1e6fbf', fx2:'01. ATE 500'},
+    {key:'acima',  label:'> R$500', bg:'#fff8e8', fg:'#c07808', border:'#c07808', fx2:'02. ACIMA DE 500'},
+    {key:'total',  label:'Total',   bg:'#1a1a2e', fg:'#ffe600', border:'#ffe600', fx2:'all'},
+  ];
+  function calcAt(sf, mob, fx2){
+    const rows = REACH_RAW.filter(r=>r[0]===sf && r[1]===mob && (fx2==='all'||r[2]===fx2) && (flgReach===-1||r[3]===flgReach));
+    const somaLim = rows.reduce((s,r)=>s+r[5], 0);
+    const somaDen = rows.reduce((s,r)=>s+r[6], 0);
+    return somaDen>0 ? (somaLim/somaDen*100).toFixed(1)+'%' : null;
+  }
+  let html = '<tr><th style="min-width:65px">Safra</th><th style="min-width:90px;text-align:left;padding-left:10px">Faixa</th>';
+  mobs.forEach(m=>{ html += `<th style="text-align:center;min-width:80px">MOB ${m}</th>`; });
+  html += '</tr>';
+  safras.forEach(sf=>{
+    rows2.forEach((row,ri)=>{
+      const isFirst = ri===0;
+      html += `<tr style="background:${row.bg};${isFirst?'border-top:3px solid #1a1a2e;':''}">`;
+      if(isFirst) html += `<td rowspan="3" style="font-weight:700;vertical-align:middle;text-align:center;background:#f8f8f8;border-top:3px solid #1a1a2e;font-size:13px">${SAFRA_LABELS[sf]||sf}</td>`;
+      html += `<td style="padding:6px 8px 6px 10px;border-left:4px solid ${row.border};font-weight:700;font-size:12px;color:${row.key==='total'?'#ffe600':row.fg}">${row.label}</td>`;
+      mobs.forEach(mob=>{
+        const val = calcAt(sf, mob, row.fx2);
+        const lmColor = row.key==='total' ? '#ffe600' : row.fg;
+        const content = val
+          ? `<span style="font-weight:700;font-size:13px;color:${lmColor}">${val}</span>`
+          : `<span style="color:#999">—</span>`;
+        html += `<td style="padding:6px 8px;text-align:center;border-left:1px solid ${row.key==='total'?'#333':'#e0e8f4'}">${content}</td>`;
+      });
+      html += '</tr>';
+    });
+  });
+  document.getElementById('tblAtendimento').innerHTML = html;
+}
+
 // ── Multi-select helpers ──────────────────────────────────────────────────────
 (function initMsFilters(){
   const SAFRA_OPTS = [
@@ -9931,11 +10188,15 @@ function updateCharts(){
   const fx2  = document.getElementById('selFx2').value;
   const pol  = getMsSel('pPolitica');
   const minV = getMinVol();
+  const flgR = getFlgReach();
   buildChartLimMob(sf, fx, mob, flg, minV, fx2, pol);
   buildChartFaixaMob(sf, mob, flg, minV, fx2, pol);
   buildTableFx2(sf, mob, flg, minV, pol);
   buildTable(sf, fx, mob, flg, minV, fx2, pol);
   buildTableResume(sf, fx, flg, minV, fx2, pol);
+  buildChartAtendimentoFx('chartAtend500',   'atend500',   '01. ATE 500',     sf, mob, flgR);
+  buildChartAtendimentoFx('chartAtendAcima', 'atendAcima', '02. ACIMA DE 500', sf, mob, flgR);
+  buildTableAtendimento(sf, mob, flgR);
 }
 
 buildKPIs();
@@ -9946,6 +10207,9 @@ buildChartEmissao();
 buildTableFx2([],[],[],0);
 buildTable([],[],[],[],0);
 buildTableResume([],[],[],0);
+buildChartAtendimentoFx('chartAtend500',   'atend500',   '01. ATE 500',     [], [], -1);
+buildChartAtendimentoFx('chartAtendAcima', 'atendAcima', '02. ACIMA DE 500', [], [], -1);
+buildTableAtendimento([], [], -1);
 </script>
 </body>
 </html>
