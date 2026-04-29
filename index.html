@@ -10077,7 +10077,7 @@ function buildSmallMultiples(safraFilter, faixaFilter, mobFilter, flgFilter, min
     const color = SAFRA_COLORS[sf]||'#1a1a2e';
     wrap.innerHTML = `
       <div style="font-size:13px;font-weight:700;color:${color};border-left:4px solid ${color};padding-left:8px;margin-bottom:10px">${SAFRA_LABELS[sf]||sf}</div>
-      <div style="position:relative;height:190px"><canvas id="chartSm_${sf}"></canvas></div>`;
+      <div style="position:relative;height:200px"><canvas id="chartSm_${sf}"></canvas></div>`;
     container.appendChild(wrap);
 
     requestAnimationFrame(()=>{
@@ -10114,12 +10114,23 @@ function buildSmallMultiples(safraFilter, faixaFilter, mobFilter, flgFilter, min
             },
             yUsr: {
               position:'right', grid:{drawOnChartArea:false},
-              min:0, max: globalMaxUsr*1.35,
-              ticks:{callback:v=>fmt(v), font:{size:9}, maxTicksLimit:4}
+              min:0, max: globalMaxUsr*3,
+              ticks:{callback:v=>fmt(v), font:{size:9}, maxTicksLimit:3}
             }
           },
           plugins:{
-            legend:{display:false},
+            legend:{
+              display:true, position:'top',
+              labels:{boxWidth:12, font:{size:10}, color:'#555',
+                generateLabels: chart=>chart.data.datasets.map((ds,i)=>({
+                  text: i===0?'Usuários':'Limite Médio',
+                  fillStyle: i===0?'#5b9bd5':'#e67e22',
+                  strokeStyle: i===0?'#5b9bd5':'#e67e22',
+                  lineWidth: i===0?0:2,
+                  hidden:false, index:i
+                }))
+              }
+            },
             datalabels:{
               display: ctx=>{
                 if(ctx.datasetIndex===0){
