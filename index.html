@@ -198,7 +198,7 @@
   <div class="card">
     <h2>Limite Médio por Safra × MOB</h2>
     <div style="font-size:11px;color:#888;margin-bottom:10px">
-      Cada célula: <strong style="color:#1a1a2e">Limite Médio (R$)</strong> · <span style="color:#27ae60">% crescimento vs MOB 0 da safra</span>
+      Cada célula: <strong style="color:#1a1a2e">Limite Médio (R$)</strong> · <span id="tblResumeSubtitle" style="color:#27ae60">% crescimento vs MOB 0 da safra</span>
     </div>
     <div style="overflow-x:auto"><table id="tblResume"></table></div>
   </div>
@@ -9949,17 +9949,11 @@ function buildTable(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0, fx
 // Resume table: safra × MOB com limite médio e % vs MOB 0
 function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0, fx2='', pol=[]){
   const safras = safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter;
-  const mobs = [0,1,2,3,4,5,6,7,8];
-  const safraColors = Object.values(SAFRA_COLORS);
+  const allMobs = [0,1,2,3,4,5,6,7,8];
 
-  let html = '<tr><th class="safra-col">Safra</th>';
-  mobs.forEach(m => html += `<th>MOB ${m}</th>`);
-  html += '</tr>';
-
-  safras.forEach((sf) => {
-    const color = SAFRA_COLORS[sf] || '#1a1a2e';
-    // Calc limit average per MOB (all faixas or filtered)
-    const limByMob = mobs.map(mob => {
+  // Compute per-safra data for all 9 MOBs
+  const series = safras.map(sf => {
+    const data = allMobs.map(mob => {
       const rows = RAW.filter(r => r[0]===sf && r[2]===mob
         && (faixaFilter.length===0||faixaFilter.includes(r[3]))
         && filterRaw(r, flgFilter, fx2, pol));
@@ -9967,21 +9961,43 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0, fx2='',
       const totalUsr = rows.reduce((s,r)=>s+r[7],0);
       return totalUsr>=Math.max(1,minVol) ? { v: Math.round(totalLim/totalUsr), n: totalUsr } : null;
     });
-    const base = limByMob[0]?.v;
+    const first = Math.max(0, data.findIndex(d=>d!==null));
+    return { sf, data: first>0 ? data.slice(first) : data, offset: first };
+  });
+
+  const anyRebased = series.some(s=>s.offset>0);
+  const maxLen = Math.max(...series.map(s=>s.data.length), 1);
+  const colLabels = anyRebased
+    ? Array.from({length:maxLen}, (_,i)=>'Mês +'+i)
+    : allMobs.slice(0,maxLen).map(m=>`MOB ${m}`);
+
+  // Update subtitle dynamically
+  const sub = document.getElementById('tblResumeSubtitle');
+  if(sub) sub.textContent = anyRebased
+    ? 'Mês +0 = primeiro mês com dados no filtro aplicado · % crescimento vs Mês +0 da safra'
+    : '% crescimento vs MOB 0 da safra';
+
+  let html = '<tr><th class="safra-col">Safra</th>';
+  colLabels.forEach(lbl => html += `<th>${lbl}</th>`);
+  html += '</tr>';
+
+  series.forEach(({sf, data}) => {
+    const color = SAFRA_COLORS[sf] || '#1a1a2e';
+    const base = data.find(d=>d!==null)?.v;
     html += `<tr>`;
     html += `<td class="safra-name" style="border-left-color:${color}">${SAFRA_LABELS[sf]}</td>`;
-    mobs.forEach((mob, mi) => {
-      const entry = limByMob[mi];
+    for(let ci=0; ci<maxLen; ci++){
+      const entry = data[ci] ?? null;
       const v = entry?.v;
-      const pct = (v && base) ? ((v - base) / base * 100) : null;
-      const isMob0 = mob===0;
-      const pctHtml = pct !== null && !isMob0
-        ? `<div class="pct${pct<0?' neg':''}">${pct>0?'+':''}${pct.toFixed(0)}%</div>`
-        : (isMob0 ? `<div class="pct" style="color:#aaa">base</div>` : '');
-      html += `<td class="${isMob0?'mob0':''}">
+      const isBaseCol = ci===0;
+      const pct = (v && base && !isBaseCol) ? ((v - base) / base * 100) : null;
+      const pctHtml = isBaseCol
+        ? `<div class="pct" style="color:#aaa">base</div>`
+        : pct !== null ? `<div class="pct${pct<0?' neg':''}">${pct>0?'+':''}${pct.toFixed(0)}%</div>` : '';
+      html += `<td class="${isBaseCol?'mob0':''}">
         ${v ? `<div class="val">R$ ${fmt(v)}</div>${pctHtml}` : '<span style="color:#ddd" title="Volume insuficiente">—</span>'}
       </td>`;
-    });
+    }
     html += '</tr>';
   });
   document.getElementById('tblResume').innerHTML = html;
