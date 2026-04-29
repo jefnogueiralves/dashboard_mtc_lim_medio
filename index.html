@@ -194,6 +194,16 @@
   </div>
 </div>
 
+<div class="grid full" style="padding-bottom:8px">
+  <div class="card">
+    <h2>Limite Médio &amp; Volume de Usuários por Safra × MOB</h2>
+    <div style="font-size:11px;color:#888;margin-bottom:14px" id="smSubtitle">
+      Cada painel: <strong style="color:#e67e22">── Limite Médio (R$)</strong> &nbsp;·&nbsp; <strong style="color:#5b9bd5">▌ Usuários graduados</strong>
+    </div>
+    <div id="smallMultiplesGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px"></div>
+  </div>
+</div>
+
 <div class="grid full">
   <div class="card">
     <h2>Limite Médio por Safra × MOB</h2>
@@ -10004,6 +10014,141 @@ function buildTableResume(safraFilter, faixaFilter, flgFilter, minVol=0, fx2='',
   document.getElementById('tblResume').className = 'rtbl';
 }
 
+// ── Small Multiples: Limite Médio + Usuários por Safra ───────────────────────
+function buildSmallMultiples(safraFilter, faixaFilter, mobFilter, flgFilter, minVol=0, fx2='', pol=[]){
+  const safras = (safraFilter.length===0 ? Object.keys(SAFRA_LABELS) : safraFilter)
+    .filter(sf => RAW.some(r=>r[0]===sf));
+  const allMobs = [0,1,2,3,4,5,6,7,8];
+  const mobsBase = mobFilter.length===0 ? allMobs : allMobs.filter(m=>mobFilter.includes(m));
+
+  // Destroy old charts
+  safras.forEach(sf=>{ if(charts['sm_'+sf]){ charts['sm_'+sf].destroy(); delete charts['sm_'+sf]; } });
+  // Also destroy any that were removed from safras list
+  Object.keys(charts).filter(k=>k.startsWith('sm_')&&!safras.includes(k.slice(3))).forEach(k=>{
+    charts[k].destroy(); delete charts[k];
+  });
+
+  const container = document.getElementById('smallMultiplesGrid');
+  container.innerHTML = '';
+  // Adjust grid columns: max 3, but if ≤2 safras use count
+  const cols = safras.length<=2 ? safras.length : safras.length<=4 ? 2 : 3;
+  container.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+
+  if(!safras.length){
+    container.innerHTML = '<div style="color:#aaa;padding:20px;grid-column:1/-1">Sem safras com dados para os filtros selecionados.</div>';
+    return;
+  }
+
+  // Compute a global Y-range so all panels are comparable
+  let globalMaxUsr = 0, globalMinLm = Infinity, globalMaxLm = 0;
+  const allSeriesData = {};
+  safras.forEach(sf=>{
+    const data = mobsBase.map(mob=>{
+      const rows = RAW.filter(r=>r[0]===sf && r[2]===mob
+        && (faixaFilter.length===0||faixaFilter.includes(r[3]))
+        && filterRaw(r, flgFilter, fx2, pol));
+      const totalLim = rows.reduce((s,r)=>s+r[7]*r[8],0);
+      const totalUsr = rows.reduce((s,r)=>s+r[7],0);
+      if(totalUsr>=Math.max(1,minVol)){
+        const lm = Math.round(totalLim/totalUsr);
+        if(totalUsr>globalMaxUsr) globalMaxUsr=totalUsr;
+        if(lm<globalMinLm) globalMinLm=lm;
+        if(lm>globalMaxLm) globalMaxLm=lm;
+        return {mob, lm, usr: totalUsr};
+      }
+      return {mob, lm: null, usr: null};
+    });
+    const first = data.findIndex(d=>d.lm!==null);
+    allSeriesData[sf] = { data, first: Math.max(0,first) };
+  });
+  const lmPad = (globalMaxLm - globalMinLm)*0.25 || 200;
+  const lmMin = Math.max(0, globalMinLm - lmPad);
+  const lmMax = globalMaxLm + lmPad;
+
+  safras.forEach(sf=>{
+    const {data, first} = allSeriesData[sf];
+    const rebased = first>0 ? data.slice(first) : data;
+    const anyRebased = first>0;
+    const labels = rebased.map((_,i)=> anyRebased ? 'Mês +'+i : 'MOB '+rebased[i].mob);
+
+    // Panel HTML
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:14px 12px 10px;';
+    const color = SAFRA_COLORS[sf]||'#1a1a2e';
+    wrap.innerHTML = `
+      <div style="font-size:13px;font-weight:700;color:${color};border-left:4px solid ${color};padding-left:8px;margin-bottom:10px">${SAFRA_LABELS[sf]||sf}</div>
+      <div style="position:relative;height:190px"><canvas id="chartSm_${sf}"></canvas></div>`;
+    container.appendChild(wrap);
+
+    requestAnimationFrame(()=>{
+      const canvas = document.getElementById('chartSm_'+sf);
+      if(!canvas) return;
+      if(charts['sm_'+sf]) charts['sm_'+sf].destroy();
+      charts['sm_'+sf] = new Chart(canvas, {
+        data: {
+          labels,
+          datasets: [
+            {
+              type:'bar', label:'Usuários',
+              data: rebased.map(d=>d.usr),
+              backgroundColor: '#5b9bd522', borderColor:'#5b9bd5', borderWidth:1,
+              yAxisID:'yUsr', order:2
+            },
+            {
+              type:'line', label:'Limite Médio (R$)',
+              data: rebased.map(d=>d.lm),
+              borderColor:'#e67e22', backgroundColor:'#e67e22',
+              pointRadius:4, pointBackgroundColor:'#e67e22',
+              tension:0.2, yAxisID:'yLm', order:1
+            }
+          ]
+        },
+        options: {
+          animation:false,
+          scales: {
+            x: { grid:{display:false}, ticks:{font:{size:10}} },
+            yLm: {
+              position:'left', grid:{display:false},
+              min: lmMin, max: lmMax,
+              ticks:{callback:v=>'R$'+fmt(v), font:{size:9}, maxTicksLimit:4}
+            },
+            yUsr: {
+              position:'right', grid:{drawOnChartArea:false},
+              min:0, max: globalMaxUsr*1.35,
+              ticks:{callback:v=>fmt(v), font:{size:9}, maxTicksLimit:4}
+            }
+          },
+          plugins:{
+            legend:{display:false},
+            datalabels:{
+              display: ctx=>{
+                if(ctx.datasetIndex===0){
+                  // bars: show only if usr > 0
+                  return ctx.dataset.data[ctx.dataIndex]!=null && ctx.dataset.data[ctx.dataIndex]>0;
+                }
+                // line: always show non-null
+                return ctx.dataset.data[ctx.dataIndex]!=null;
+              },
+              anchor: ctx=>ctx.datasetIndex===0?'end':'end',
+              align: ctx=>ctx.datasetIndex===0?'top':'top',
+              clamp:true, clip:false,
+              color: ctx=>ctx.datasetIndex===0?'#5b9bd5':'#e67e22',
+              font: {size:9, weight:'700'},
+              formatter:(v,ctx)=>{
+                if(v==null) return '';
+                return ctx.datasetIndex===0 ? fmt(v) : 'R$'+fmt(v);
+              }
+            }
+          },
+          layout:{padding:{top:20, right:8}},
+          responsive:true, maintainAspectRatio:false
+        },
+        plugins:[ChartDataLabels]
+      });
+    });
+  });
+}
+
 // ── Nível de Atendimento ─────────────────────────────────────────────────────
 function getFlgReach(){
   const sel = document.querySelector('input[name="rdReach"]:checked');
@@ -10203,6 +10348,7 @@ function updateCharts(){
   const flgR = getFlgReach();
   buildChartLimMob(sf, fx, mob, flg, minV, fx2, pol);
   buildChartFaixaMob(sf, mob, flg, minV, fx2, pol);
+  buildSmallMultiples(sf, fx, mob, flg, minV, fx2, pol);
   buildTableFx2(sf, mob, flg, minV, pol);
   buildTable(sf, fx, mob, flg, minV, fx2, pol);
   buildTableResume(sf, fx, flg, minV, fx2, pol);
@@ -10215,6 +10361,7 @@ buildKPIs();
 buildChartLimMob([],[],[],[],0);
 buildChartFaixaMob([],[],[],0);
 buildChartEmissao();
+buildSmallMultiples([],[],[],[],0);
 
 buildTableFx2([],[],[],0);
 buildTable([],[],[],[],0);
